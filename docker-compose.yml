@@ -1,0 +1,14 @@
+version: '3.7'
+
+services:
+  ohlcv_fetcher:
+    build:
+      context: ./app
+      dockerfile: ../Dockerfile
+    ports:
+    - "8080:8080"
+    volumes:
+    - ./app:/usr/src/app
+    env_file:
+      - .env
+
