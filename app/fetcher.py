@@ -1,12 +1,12 @@
 import asyncio
 import logging
-
-from ccxt import async_support as ccxt
 from time import time
 
+from ccxt import async_support as ccxt
+
 from config import EXCHANGES, SCHEMA, SYMBOLS, TIMEFRAMES
-from postgres_client import SynchronousPostgresClient
 from error import FetchError
+from postgres_client import SynchronousPostgresClient
 from utils import prepare_data_for_postgres
 
 logger = logging.getLogger()
@@ -73,7 +73,8 @@ class OHLCVFetcher:
                     processed_symbols += 1
                     passed_time = time() - start_time
                     if processed_symbols % 10 == 0:
-                        logger.info("Processed {}/{} symbols in {:.1f}s.".format(processed_symbols, amount_symbols, passed_time))
+                        logger.info("Processed {}/{} symbols in {:.1f}s."
+                                    .format(processed_symbols, amount_symbols, passed_time))
             else:
                 logger.warning("Exchange '{}' has no OHLCV data available. Skipping entirely.".format(exchange))
         except Exception as e:
@@ -134,8 +135,8 @@ class OHLCVFetcher:
 
                 next_attempt_sec = 40 * (attempt + 1)
                 logger.warning("{} attempt to get OHLCV data for exchange '{}' symbol '{}' timeframe '{}' since '{}' "
-                               "was unsuccessful. Retrying in {} seconds".format(
-                    attempt, exchange, symbol, timeframe, since, next_attempt_sec))
+                               "was unsuccessful. Retrying in {} seconds"
+                               .format(attempt, exchange, symbol, timeframe, since, next_attempt_sec))
                 logger.warning(e)
 
                 await asyncio.sleep(next_attempt_sec)

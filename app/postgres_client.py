@@ -1,4 +1,5 @@
 import logging
+
 import psycopg2
 import psycopg2.extras
 
@@ -15,7 +16,6 @@ class SynchronousPostgresClient:
         self.cur = None
 
     def __enter__(self):
-        print(PSQL_DSN)
         self.conn = psycopg2.connect(dsn=PSQL_DSN)
         self.cur = self.conn.cursor()
         return self
@@ -60,9 +60,9 @@ class SynchronousPostgresClient:
 
     def fetch_latest_timestamp(self, schema, exchange, symbol, timeframe):
         query = """
-        SELECT timestamp from {schema}.{exchange} 
-        WHERE symbol='{symbol}' 
-        AND timeframe='{timeframe}' 
+        SELECT timestamp from {schema}.{exchange}
+        WHERE symbol='{symbol}'
+        AND timeframe='{timeframe}'
         ORDER BY timestamp DESC
         LIMIT 1;
         """.format(
