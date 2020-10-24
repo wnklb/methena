@@ -31,28 +31,31 @@ class OHLCVFetcher:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         for exchange_id, exchange in self.exchanges.items():
             try:
-                logger.debug("Trying to close exchange: {}".format(exchange_id))
+                logger.info("Trying to close exchange: {}".format(exchange_id))
                 await exchange.close()
-                logger.debug("Successfully closed exchange: {}".format(exchange_id))
+                logger.info("Successfully closed exchange: {}".format(exchange_id))
             except Exception as e:
                 logger.error("Error during exchange closing!")
                 logger.error(e)
 
     async def main(self):
+        self.init()
         await self._fetch()
 
+    def init(self):
+        with SynchronousPostgresClient() as postgres_client:
+            postgres_client.create_schema_if_not_exist(schema=SCHEMA)
+            for exchange_id in self.exchanges.keys():
+                postgres_client.create_table_if_not_exists(schema=SCHEMA, table=exchange_id)
+        
     async def _fetch(self):
         with SynchronousPostgresClient() as postgres_client:
             self.postgres_client = postgres_client
-            # Create a schema (with the name of the exchange) for each given exchange (if not already exists).
-            self.postgres_client.create_schema_if_not_exist(schema=SCHEMA)
-            for exchange_id in self.exchanges.keys():
-                self.postgres_client.create_table_if_not_exists(schema=SCHEMA, table=exchange_id)
             # Fetch OHLCV data asynchronously for each exchange.
-            tasks = [self._fetch_ohlcv_data_for_exchange(exchange) for exchange in self.exchanges.values()]
+            tasks = [self._fetch_ohlcv_for_exchange(exchange) for exchange in self.exchanges.values()]
             await asyncio.gather(*tasks)
 
-    async def _fetch_ohlcv_data_for_exchange(self, exchange):
+    async def _fetch_ohlcv_for_exchange(self, exchange):
         try:
             if exchange.has['fetchOHLCV']:
                 symbols = SYMBOLS if SYMBOLS else exchange.symbols
