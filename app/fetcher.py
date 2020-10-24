@@ -6,7 +6,7 @@ from ccxt import async_support as ccxt
 
 from config import EXCHANGES, SCHEMA, SYMBOLS, TIMEFRAMES
 from error import FetchError
-from postgres_client import SynchronousPostgresClient
+from clients.postgres_client import SynchronousPostgresClient
 from utils import prepare_data_for_postgres
 
 logger = logging.getLogger()
@@ -113,7 +113,7 @@ class OHLCVFetcher:
                 exchange.id, symbol, timeframe, SCHEMA, table))
             # For now, we don't care why/that this fails und just pop it.
             # TODO: handling of psql error should be implemented later.
-            self.postgres_client.insert_many(values, table=table)
+            self.postgres_client.insert_many(values, table)
             logger.info("Successfully inserted OHLCV data for: '{}', '{}', '{}' into '{}.{}'".format(
                 exchange.id, symbol, timeframe, SCHEMA, table))
 

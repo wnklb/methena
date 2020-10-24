@@ -3,7 +3,7 @@ import logging
 import psycopg2
 import psycopg2.extras
 
-from config import PSQL_DSN, SCHEMA, table
+from config import PSQL_DSN, SCHEMA
 from utils import convert_datetime_to_timestamp
 
 logger = logging.getLogger()
@@ -49,7 +49,7 @@ class SynchronousPostgresClient:
         self.execute(query)
         self.commit()
 
-    def insert_many(self, values, table=table, schema=SCHEMA, page_size=1000):
+    def insert_many(self, values, table, schema=SCHEMA, page_size=1000):
         query = "INSERT INTO {schema}.{table} VALUES %s;".format(schema=schema, table=table)
         psycopg2.extras.execute_values(self.cur, query, values, page_size=page_size)
         self.conn.commit()

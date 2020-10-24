@@ -12,8 +12,6 @@ def parse_symbols():
 PSQL_DSN = getenv('PSQL_DSN')
 
 SCHEMA = getenv('SCHEMA')
-table = getenv('TABLE')
-
 EXCHANGES = getenv('EXCHANGES').split(',')
 SYMBOLS = parse_symbols()
 TIMEFRAMES = getenv('TIMEFRAMES').split(',')
