@@ -4,12 +4,15 @@ from time import time
 
 from ccxt import async_support as ccxt
 
-from config import EXCHANGES, SCHEMA, SYMBOLS, TIMEFRAMES
+from clients.filesystem_client import FilesystemClient
+from config import SCHEMA
 from error import FetchError
 from clients.postgres_client import SynchronousPostgresClient
 from utils import prepare_data_for_postgres
 
 logger = logging.getLogger()
+
+
 # handler = logging.StreamHandler()
 # formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 # handler.setFormatter(formatter)
@@ -20,9 +23,11 @@ logger = logging.getLogger()
 class OHLCVFetcher:
 
     def __init__(self):
-        self.exchange_ids = set(EXCHANGES)
-        self.exchanges = {}
+        self.fs_client = FilesystemClient()
         self.postgres_client = None
+        self.ohlcv_config = self.fs_client.load_ohlcv_config()
+        self.exchange_ids = self.ohlcv_config.keys()
+        self.exchanges = {}
 
     async def __aenter__(self):
         await self._inti_exchange_markets(self.exchange_ids)
@@ -47,7 +52,7 @@ class OHLCVFetcher:
             postgres_client.create_schema_if_not_exist(schema=SCHEMA)
             for exchange_id in self.exchanges.keys():
                 postgres_client.create_table_if_not_exists(schema=SCHEMA, table=exchange_id)
-        
+
     async def _fetch(self):
         with SynchronousPostgresClient() as postgres_client:
             self.postgres_client = postgres_client
@@ -58,14 +63,17 @@ class OHLCVFetcher:
     async def _fetch_ohlcv_for_exchange(self, exchange):
         try:
             if exchange.has['fetchOHLCV']:
-                symbols = SYMBOLS if SYMBOLS else exchange.symbols
+                symbols = self.ohlcv_config[exchange.id].keys() if self.ohlcv_config[exchange.id] else exchange.symbols
                 start_time = time()
                 amount_symbols = len(symbols)
                 processed_symbols = 0
                 logger.info("Exchange '{}' has {} symbols: {}".format(exchange.id, amount_symbols, symbols))
 
                 for symbol in symbols:
-                    for timeframe in TIMEFRAMES:
+                    timeframes = self.ohlcv_config[exchange.id][symbol] \
+                        if self.ohlcv_config[exchange.id][symbol] \
+                        else exchange.timeframes
+                    for timeframe in timeframes:
                         try:
                             logger.info("Attempting to fetch OHLCV data for: '{}', '{}', '{}'".format(
                                 exchange.id, symbol, timeframe))
