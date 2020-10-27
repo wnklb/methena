@@ -13,10 +13,9 @@ def get_int(key, default):
 
 PSQL_DSN = getenv('PSQL_DSN')
 
+OHLCV_CONFIG_FILE = getenv('OHLCV_CONFIG_FILE', 'ohlcv_config.json')
+
 SCHEMA = getenv('SCHEMA')
-EXCHANGES = get_list('EXCHANGES')
-SYMBOLS = get_list('SYMBOLS')
-TIMEFRAMES = get_list('TIMEFRAMES')
 
 MQTT_HOST = getenv('MQTT_HOST')
 MQTT_PORT = get_int('MQTT_PORT', '1883')
