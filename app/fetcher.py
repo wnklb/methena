@@ -36,7 +36,7 @@ class OHLCVFetcher:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         for exchange_id, exchange in self.exchanges.items():
             try:
-                logger.info("Trying to close exchange: {}".format(exchange_id))
+                logger.debug("Trying to close exchange: {}".format(exchange_id))
                 await exchange.close()
                 logger.info("Successfully closed exchange: {}".format(exchange_id))
             except Exception as e:
@@ -75,7 +75,7 @@ class OHLCVFetcher:
                         else exchange.timeframes
                     for timeframe in timeframes:
                         try:
-                            logger.info("Attempting to fetch OHLCV data for: '{}', '{}', '{}'".format(
+                            logger.debug("Attempting to fetch OHLCV data for: '{}', '{}', '{}'".format(
                                 exchange.id, symbol, timeframe))
                             await self._fetch_whole_ohlcv_timeseries_data(exchange, symbol, timeframe)
                         except Exception as e:
@@ -84,7 +84,7 @@ class OHLCVFetcher:
                     processed_symbols += 1
                     passed_time = time() - start_time
                     if processed_symbols % 10 == 0:
-                        logger.info("Processed {}/{} symbols in {:.1f}s."
+                        logger.debug("Processed {}/{} symbols in {:.1f}s."
                                     .format(processed_symbols, amount_symbols, passed_time))
             else:
                 logger.warning("Exchange '{}' has no OHLCV data available. Skipping entirely.".format(exchange))
@@ -120,12 +120,12 @@ class OHLCVFetcher:
                 since = latest_timestamp
 
             values = prepare_data_for_postgres(symbol, timeframe, ohlcv_data)
-            logger.info("Attempting to insert OHLCV data for: '{}', '{}', '{}' into '{}.{}'".format(
+            logger.debug("Attempting to insert OHLCV data for: '{}', '{}', '{}' into '{}.{}'".format(
                 exchange.id, symbol, timeframe, SCHEMA, table))
             # For now, we don't care why/that this fails und just pop it.
             # TODO: handling of psql error should be implemented later.
             self.postgres_client.insert_many(values, table)
-            logger.info("Successfully inserted OHLCV data for: '{}', '{}', '{}' into '{}.{}'".format(
+            logger.debug("Successfully inserted OHLCV data for: '{}', '{}', '{}' into '{}.{}'".format(
                 exchange.id, symbol, timeframe, SCHEMA, table))
 
         duration = time() - start_time
