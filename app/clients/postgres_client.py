@@ -58,7 +58,7 @@ class SynchronousPostgresClient:
         self.execute(query)
         return self.cur.fetchone()
 
-    def fetch_latest_timestamp(self, schema, exchange, symbol, timeframe):
+    def fetch_latest_timestamp(self, exchange, symbol, timeframe):
         query = """
         SELECT timestamp from {schema}.{exchange}
         WHERE symbol='{symbol}'
@@ -66,7 +66,7 @@ class SynchronousPostgresClient:
         ORDER BY timestamp DESC
         LIMIT 1;
         """.format(
-            schema=schema,
+            schema=SCHEMA,
             exchange=exchange,
             symbol=symbol,
             timeframe=timeframe
