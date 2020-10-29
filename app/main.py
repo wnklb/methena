@@ -1,14 +1,12 @@
 import asyncio
 import logging
 
-from fetcher import OHLCVFetcher
+from utils.log.logging import init_logging_config
 
-logger = logging.getLogger()
-handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+init_logging_config()
+log = logging.getLogger(__name__)  # noqa F841
+
+from fetcher import OHLCVFetcher
 
 
 async def main():

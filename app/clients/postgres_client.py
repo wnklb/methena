@@ -4,7 +4,7 @@ import psycopg2
 import psycopg2.extras
 
 from config import PSQL_DSN, SCHEMA
-from utils import convert_datetime_to_timestamp
+from utils.postgres import convert_datetime_to_timestamp
 
 logger = logging.getLogger()
 

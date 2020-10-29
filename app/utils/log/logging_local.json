@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "simple": {
+      "format": "%(asctime)s [%(filename)s] %(levelname)s: %(message)s",
+      "datefmt": "%H:%M:%S"
+    },
+    "not-used-yet": {
+      "format": "CCXT || [%(filename)s] %(levelname)s: %(message)s",
+      "datefmt": "%H:%M:%S"
+    }
+  },
+  "filters": {
+    "max-level-filter": {
+      "()": "app.utils.log.logging.MaxLevelFilter",
+      "level": 20
+    }
+  },
+  "handlers": {
+    "console": {
+      "class": "logging.StreamHandler",
+      "level": "DEBUG",
+      "formatter": "simple",
+      "stream": "ext://sys.stdout",
+      "filters": ["max-level-filter"]
+    },
+    "console-not-used-yet": {
+      "class": "logging.StreamHandler",
+      "level": "DEBUG",
+      "formatter": "not-used-yet",
+      "stream": "ext://sys.stdout"
+    },
+    "console-error": {
+      "class": "logging.StreamHandler",
+      "level": "WARNING",
+      "formatter": "simple",
+      "stream": "ext://sys.stderr"
+    }
+  },
+  "loggers": {
+    "ccxt": {
+      "level": "INFO",
+      "handlers": [
+        "console-not-used-yet"
+      ],
+      "propagate": false
+    }
+  },
+  "root": {
+    "level": "INFO",
+    "handlers": [
+      "console",
+      "console-error"
+    ]
+  }
+}

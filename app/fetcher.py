@@ -8,16 +8,9 @@ from clients.filesystem_client import FilesystemClient
 from config import SCHEMA
 from error import FetchError
 from clients.postgres_client import SynchronousPostgresClient
-from utils import prepare_data_for_postgres
+from utils.postgres import prepare_data_for_postgres
 
-logger = logging.getLogger()
-
-
-# handler = logging.StreamHandler()
-# formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-# handler.setFormatter(formatter)
-# logger.addHandler(handler)
-# logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class OHLCVFetcher:
