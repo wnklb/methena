@@ -1,6 +1,13 @@
+import logging
+
 import paho.mqtt.client as mqtt
 
+from services.ohlcv_config_service import OHLCVConfigService
+from utils.mqtt_parser import MQTTParser
+
 from config import MQTT_HOST, MQTT_PORT, MQTT_TOPIC_CCXT_OHLCV
+
+log = logging.getLogger()
 
 
 class MqttClient:
@@ -12,6 +19,8 @@ class MqttClient:
         self.client.on_publish = self._on_publish
         self.client.on_subscribe = self._on_subscribe
         self.client.on_unsubscribe = self._on_unsubscribe
+        self.parser = MQTTParser()
+        self.ohlcv_config_service = OHLCVConfigService.get_instance()
 
     def __enter__(self):
         try:
@@ -37,26 +46,32 @@ class MqttClient:
     # The callback for when the client receives a CONNACK response from the server.
     def _on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            print("Successfully connected to broker: '{}'".format(mqtt.connack_string(rc)))
+            log.debug("Successfully connected to broker: '{}'".format(mqtt.connack_string(rc)))
         else:
-            print("Error connecting to broker: '{}'".format(mqtt.connack_string(rc)))
+            log.debug("Error connecting to broker: '{}'".format(mqtt.connack_string(rc)))
 
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
         client.subscribe(MQTT_TOPIC_CCXT_OHLCV)
+        print(MQTT_TOPIC_CCXT_OHLCV)
         client.message_callback_add(MQTT_TOPIC_CCXT_OHLCV, self.on_ccxt_ohlcv_message)
+
+    def on_ccxt_ohlcv_message(self, client, userdata, msg):
+        print(type(msg.topic))
+        print('received ccxt message ' + msg.payload.decode())
+        if 'ccxt/ohlcv/add' in msg.topic:
+            descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
+            self.ohlcv_config_service.add(descriptor)
+        elif 'ccxt/ohlcv/remove' in msg.topic:
+            descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
 
     # The callback for when a PUBLISH message is received from the server.
     def _on_disconnect(self, client, userdata, rc):
         if rc != 0:
-            print("Unexpected disconnection.")
-
-    def on_ccxt_ohlcv_message(self, client, userdata, msg):
-        print('received ccxt message ' + str(msg.payload))
-
+            log.warning("Unexpected disconnection.")
 
     def _on_message(self, client, userdata, msg):
-        print(msg.topic + " " + str(msg.payload))
+        log.debug(msg.topic + " " + str(msg.payload))
 
     def _on_publish(self, client, userdata, mid):
         pass
