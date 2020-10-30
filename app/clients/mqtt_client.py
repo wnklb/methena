@@ -2,7 +2,7 @@ import logging
 
 import paho.mqtt.client as mqtt
 
-from services.ohlcv_config_service import OHLCVConfigService
+from services.state import StateService
 from utils.mqtt_parser import MQTTParser
 
 from config import MQTT_HOST, MQTT_PORT, MQTT_TOPIC_CCXT_OHLCV
@@ -20,7 +20,7 @@ class MqttClient:
         self.client.on_subscribe = self._on_subscribe
         self.client.on_unsubscribe = self._on_unsubscribe
         self.parser = MQTTParser()
-        self.ohlcv_config_service = OHLCVConfigService.get_instance()
+        self.ohlcv_config_service = StateService.get_instance()
 
     def __enter__(self):
         try:

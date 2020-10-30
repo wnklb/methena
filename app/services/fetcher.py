@@ -2,12 +2,9 @@ import asyncio
 import logging
 from time import time
 
-from ccxt import async_support as ccxt
-
-from config import SCHEMA
 from error import FetchError
 from clients.postgres_client import SynchronousPostgresClient
-from services.ohlcv_config_service import OHLCVConfigService
+from services.state import StateService
 from utils.postgres import prepare_data_for_postgres
 
 logger = logging.getLogger(__name__)
@@ -16,76 +13,58 @@ logger = logging.getLogger(__name__)
 class OHLCVFetcher:
 
     def __init__(self):
-        self.postgres_client = None
-        self.ohlcv_config = OHLCVConfigService.get_instance().config
-        self.exchange_ids = OHLCVConfigService.get_instance().exchanges
-        # self.exchange_ids = self.ohlcv_config.keys()
-        self.exchanges = {}
-
-    async def __aenter__(self):
-        await self._init_exchange_markets(self.exchange_ids)
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        for exchange_id, exchange in self.exchanges.items():
-            try:
-                logger.debug("Trying to close exchange: {}".format(exchange_id))
-                await exchange.close()
-                logger.info("Successfully closed exchange: {}".format(exchange_id))
-            except Exception as e:
-                logger.error("Error during exchange closing!")
-                logger.error(e)
+        self.postgres_client = SynchronousPostgresClient()
+        self.state_service = StateService.get_instance()
+        self.state = self.state_service.state
 
     async def main(self):
-        self.init()
-        await self._fetch()
+        await self.__fetch()
 
-    def init(self):
-        with SynchronousPostgresClient() as postgres_client:
-            postgres_client.create_schema_if_not_exist(schema=SCHEMA)
-            for exchange_id in self.exchanges.keys():
-                postgres_client.create_table_if_not_exists(schema=SCHEMA, table=exchange_id)
-
-    async def _fetch(self):
-        with SynchronousPostgresClient() as postgres_client:
-            self.postgres_client = postgres_client
+    async def __fetch(self):
+        with self.postgres_client:
             # Fetch OHLCV data asynchronously for each exchange.
-            tasks = [self._process_exchange(exchange) for exchange in self.exchanges.values()]
+            tasks = [self.__process_exchange(exchange) for exchange in
+                     self.state['exchanges'].values()]
             await asyncio.gather(*tasks)
 
-    async def _process_exchange(self, exchange):
+    async def __process_exchange(self, exchange):
         try:
             if exchange.has['fetchOHLCV']:
-                symbols = self.ohlcv_config[exchange.id].keys() if self.ohlcv_config[exchange.id] else exchange.symbols
+                symbols = self.state['config'][exchange.id].keys() if self.state['config'][
+                    exchange.id] else exchange.symbols
 
                 for symbol in symbols:
-                    await self._process_symbol(symbol, exchange)
+                    await self.__process_symbol(symbol, exchange)
             else:
-                logger.warning("Exchange '{}' has no OHLCV data available. Skipping entirely.".format(exchange))
+                logger.warning(
+                    "Exchange '{}' has no OHLCV data available. Skipping entirely.".format(
+                        exchange))
         except Exception as e:
             logger.error("Unexpected behaviour when trying to access the exchange. Skipping!")
             logger.error(e)
 
-    async def _process_symbol(self, symbol, exchange):
-        timeframes = self.ohlcv_config[exchange.id][symbol]
-        if not timeframes:  # If the config holds an empty list, take all timeframes available at the exchange
+    async def __process_symbol(self, symbol, exchange):
+        timeframes = self.state['config'][exchange.id][symbol]
+        if not timeframes:  # If the config holds an empty list, take all timeframes available
             timeframes = exchange.timeframes
 
         for timeframe in timeframes:
             try:
-                await self._process_timeseries(exchange, symbol, timeframe)
+                await self.__process_timeseries(exchange, symbol, timeframe)
             except Exception as e:
                 logger.error(e)
 
-    async def _process_timeseries(self, exchange, symbol, timeframe):
-        logger.info("Attempting to fetch OHLCV timeseries for '{}', '{}', '{}'".format(exchange.id, symbol, timeframe))
-        since = self.get_since_timestamp(exchange, symbol, timeframe)
+    async def __process_timeseries(self, exchange, symbol, timeframe):
+        logger.info(
+            "Attempting to fetch OHLCV timeseries for '{}', '{}', '{}'".format(exchange.id, symbol,
+                                                                               timeframe))
+        since = self.__get_since_timestamp(exchange, symbol, timeframe)
         count = 0
         start_time = time()
 
         while True:
             try:
-                ohlcv_data = await self._fetch_timeseries_chunk(exchange, symbol, timeframe, since)
+                ohlcv_data = await self.__fetch_timeseries_chunk(exchange, symbol, timeframe, since)
             except FetchError as e:
                 logger.error(e)
                 break  # there is something wrong and we skip this OHLCV timeseries for now.
@@ -106,15 +85,17 @@ class OHLCVFetcher:
                 exchange.id, symbol, timeframe, exchange.id))
 
         duration = time() - start_time
-        logger.info("Completed and fetched {} entrties for: '{}', '{}', '{}' taking {:.2f}s.".format(
-            count, exchange.id, symbol, timeframe, duration))
+        logger.info(
+            "Completed and fetched {} entrties for: '{}', '{}', '{}' taking {:.2f}s.".format(
+                count, exchange.id, symbol, timeframe, duration))
 
-    def get_since_timestamp(self, exchange, symbol, timeframe):
+    def __get_since_timestamp(self, exchange, symbol, timeframe):
         since = None
         try:
             since = self.postgres_client.fetch_latest_timestamp(exchange.id, symbol, timeframe)
         except Exception as e:
-            logger.info("No latest timestamp available for: {} {} {}".format(exchange.id, symbol, timeframe))
+            logger.info("No latest timestamp available for: {} {} {}".format(exchange.id, symbol,
+                                                                             timeframe))
             logger.info(e)
 
         if since is None:
@@ -122,7 +103,7 @@ class OHLCVFetcher:
 
         return since
 
-    async def _fetch_timeseries_chunk(self, exchange, symbol, timeframe, since):
+    async def __fetch_timeseries_chunk(self, exchange, symbol, timeframe, since):
         for attempt in range(5):
             try:
                 await asyncio.sleep((exchange.rateLimit / 1000) + 0.5)  # +0.5 for safety margin.
@@ -131,32 +112,19 @@ class OHLCVFetcher:
             except Exception as e:
                 if attempt == 4:
                     logger.error(e)
-                    raise FetchError("Unable to fetch OHLCV data for exchange '{}' symbol '{}' timeframe '{}' for "
-                                     "5 times in a row given 'since' timestamp: {}"
-                                     .format(exchange, symbol, timeframe, since))
+                    raise FetchError(
+                        "Unable to fetch OHLCV data for exchange '{}' symbol '{}' timeframe '{}' "
+                        "for  5 times in a row given 'since' timestamp: {}"
+                            .format(exchange, symbol, timeframe, since))
 
                 next_attempt_sec = 40 * (attempt + 1)
-                logger.warning("{} attempt to get OHLCV data for exchange '{}' symbol '{}' timeframe '{}' since '{}' "
-                               "was unsuccessful. Retrying in {} seconds"
-                               .format(attempt, exchange, symbol, timeframe, since, next_attempt_sec))
+                logger.warning(
+                    "{} attempt to get OHLCV data for exchange '{}' symbol '{}' timeframe '{}' "
+                    "since '{}'  was unsuccessful. Retrying in {} seconds"
+                        .format(attempt, exchange, symbol, timeframe, since, next_attempt_sec))
                 logger.warning(e)
 
                 await asyncio.sleep(next_attempt_sec)
-
-    async def _init_exchange_markets(self, exchange_ids):
-        tasks = [self._init_exchange_market(exchange_id) for exchange_id in exchange_ids]
-        await asyncio.gather(*tasks)
-
-    async def _init_exchange_market(self, exchange_id):
-        try:
-            exchange = getattr(ccxt, exchange_id)()
-            await exchange.load_markets()
-            await asyncio.sleep((exchange.rateLimit / 1000) + 0.5)
-            self.exchanges[exchange_id] = exchange
-            logger.info("Successfully loaded markets for '{}' and added them.".format(exchange_id))
-        except Exception as e:  # TODO: find out the correct exception.
-            logger.info("Couldn't load markets for exchange '{}'.".format(exchange_id))
-            logger.error(e)
 
 
 async def main():
