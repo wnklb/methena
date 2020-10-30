@@ -4,10 +4,10 @@ from time import time
 
 from ccxt import async_support as ccxt
 
-from clients.filesystem_client import FilesystemClient
 from config import SCHEMA
 from error import FetchError
 from clients.postgres_client import SynchronousPostgresClient
+from services.ohlcv_config_service import OHLCVConfigService
 from utils.postgres import prepare_data_for_postgres
 
 logger = logging.getLogger(__name__)
@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 class OHLCVFetcher:
 
     def __init__(self):
-        self.fs_client = FilesystemClient()
         self.postgres_client = None
-        self.ohlcv_config = self.fs_client.load_ohlcv_config()
-        self.exchange_ids = self.ohlcv_config.keys()
+        self.ohlcv_config = OHLCVConfigService.get_instance().config
+        self.exchange_ids = OHLCVConfigService.get_instance().exchanges
+        # self.exchange_ids = self.ohlcv_config.keys()
         self.exchanges = {}
 
     async def __aenter__(self):
