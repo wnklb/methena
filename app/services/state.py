@@ -8,7 +8,6 @@ log = logging.getLogger()
 
 
 class StateService(Singleton):
-    __instance = None
     state = {
         'config': {},
         'next_sync_timestamp': None,
