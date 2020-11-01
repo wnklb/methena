@@ -16,7 +16,6 @@ class StateService(Singleton):
 
     def __init__(self):
         StateService.state['config'] = FilesystemClient.load_ohlcv_config()
-        self.__udpate_state()
 
     def get_state(self):
         return self.state
@@ -46,7 +45,6 @@ class StateService(Singleton):
             else:
                 self.state['config'][exchange] = {symbol: timeframes for symbol, timeframes in
                                                   symbols.items()}
-        self.__udpate_state()
 
     def remove(self, descriptor):
         pass
@@ -57,5 +55,3 @@ class StateService(Singleton):
     def set_next_sync_timestamp(self):
         self.state['next_sync_timestamp'] = datetime.now() + timedelta(seconds=20)
 
-    def __udpate_state(self):
-        StateService.state['exchange_ids'] = StateService.state['config'].keys()
