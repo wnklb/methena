@@ -1,9 +1,11 @@
 import asyncio
 import logging
-from time import time
+from datetime import datetime
+from time import time, sleep
 
+from clients.ccxt_client import CCXTClient
 from error import FetchError
-from clients.postgres_client import SynchronousPostgresClient
+from clients.postgres_client import PostgresClient
 from services.state import StateService
 from utils.postgres import prepare_data_for_postgres
 
@@ -13,28 +15,32 @@ logger = logging.getLogger(__name__)
 class OHLCVFetcher:
 
     def __init__(self):
-        self.postgres_client = SynchronousPostgresClient()
-        self.state_service = StateService.get_instance()
-        self.state = self.state_service.state
+        self.postgres_client = PostgresClient()
+        self.ccxt_client = CCXTClient()
+        self.state_service = StateService()
 
     async def main(self):
-        await self.__fetch()
+        while True:
+            self.state_service.set_next_sync_timestamp()
+            await self.ccxt_client.init_exchange_markets()
+            # Exit condition via mqtt
+            await self.__fetch()
 
     async def __fetch(self):
         with self.postgres_client:
             # Fetch OHLCV data asynchronously for each exchange.
-            tasks = [self.__process_exchange(exchange) for exchange in
-                     self.state['exchanges'].values()]
+            exchanges = self.ccxt_client.get_loaded_exchanges()
+            tasks = [self.__process_exchange(exchange) for exchange in exchanges]
             await asyncio.gather(*tasks)
 
     async def __process_exchange(self, exchange):
         try:
             if exchange.has['fetchOHLCV']:
-                symbols = self.state['config'][exchange.id].keys() if self.state['config'][
-                    exchange.id] else exchange.symbols
+                symbols_state = self.state_service.get_symbols(exchange.id)
+                symbols = symbols_state.keys() if symbols_state else exchange.symbols
 
                 for symbol in symbols:
-                    await self.__process_symbol(symbol, exchange)
+                    await self.__process_symbol(exchange, symbol)
             else:
                 logger.warning(
                     "Exchange '{}' has no OHLCV data available. Skipping entirely.".format(
@@ -43,8 +49,8 @@ class OHLCVFetcher:
             logger.error("Unexpected behaviour when trying to access the exchange. Skipping!")
             logger.error(e)
 
-    async def __process_symbol(self, symbol, exchange):
-        timeframes = self.state['config'][exchange.id][symbol]
+    async def __process_symbol(self, exchange, symbol):
+        timeframes = self.state_service.get_timeframes(exchange.id, symbol)
         if not timeframes:  # If the config holds an empty list, take all timeframes available
             timeframes = exchange.timeframes
 
@@ -56,13 +62,17 @@ class OHLCVFetcher:
 
     async def __process_timeseries(self, exchange, symbol, timeframe):
         logger.info(
-            "Attempting to fetch OHLCV timeseries for '{}', '{}', '{}'".format(exchange.id, symbol,
-                                                                               timeframe))
+            "[{}] [{}] [{}] - Attempting to fetch OHLCV timeseries".format(exchange.id, symbol,
+                                                                           timeframe))
         since = self.__get_since_timestamp(exchange, symbol, timeframe)
         count = 0
         start_time = time()
+        next_sync = self.state_service.get_next_sync_timestamp()
 
         while True:
+            if datetime.now() > next_sync:
+                logger.warning('Breaking out of loop to sync - {}'.format(next_sync))
+                break
             try:
                 ohlcv_data = await self.__fetch_timeseries_chunk(exchange, symbol, timeframe, since)
             except FetchError as e:
@@ -81,21 +91,22 @@ class OHLCVFetcher:
             # For now, we don't care why/that this fails und just pop it.
             # TODO: handling of psql error should be implemented later.
             self.postgres_client.insert_many(values, exchange.id)
-            logger.debug("Successfully inserted OHLCV chunk for: '{}', '{}', '{}' into '{}'".format(
-                exchange.id, symbol, timeframe, exchange.id))
+            logger.debug("[{}] [{}] [{}] - Successfully inserted OHLCV chunk.".format(
+                exchange.id, symbol, timeframe))
 
         duration = time() - start_time
         logger.info(
-            "Completed and fetched {} entrties for: '{}', '{}', '{}' taking {:.2f}s.".format(
-                count, exchange.id, symbol, timeframe, duration))
+            "[{}] [{}] [{}] - Completed and fetched {} entrties for taking {:.2f}s.".format(
+                exchange.id, symbol, timeframe, count, duration))
 
     def __get_since_timestamp(self, exchange, symbol, timeframe):
         since = None
         try:
             since = self.postgres_client.fetch_latest_timestamp(exchange.id, symbol, timeframe)
         except Exception as e:
-            logger.info("No latest timestamp available for: {} {} {}".format(exchange.id, symbol,
-                                                                             timeframe))
+            logger.info(
+                "[{}] [{}] [{}] - No latest timestamp available.".format(exchange.id, symbol,
+                                                                         timeframe))
             logger.info(e)
 
         if since is None:
@@ -107,8 +118,7 @@ class OHLCVFetcher:
         for attempt in range(5):
             try:
                 await asyncio.sleep((exchange.rateLimit / 1000) + 0.5)  # +0.5 for safety margin.
-                ohlcv_data = await exchange.fetch_ohlcv(symbol, since=since, timeframe=timeframe)
-                return ohlcv_data
+                return await exchange.fetch_ohlcv(symbol, since=since, timeframe=timeframe)
             except Exception as e:
                 if attempt == 4:
                     logger.error(e)

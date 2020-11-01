@@ -20,7 +20,7 @@ class MqttClient:
         self.client.on_subscribe = self._on_subscribe
         self.client.on_unsubscribe = self._on_unsubscribe
         self.parser = MQTTParser()
-        self.ohlcv_config_service = StateService.get_instance()
+        self.state_service = StateService()
 
     def __enter__(self):
         try:
@@ -53,15 +53,12 @@ class MqttClient:
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
         client.subscribe(MQTT_TOPIC_CCXT_OHLCV)
-        print(MQTT_TOPIC_CCXT_OHLCV)
         client.message_callback_add(MQTT_TOPIC_CCXT_OHLCV, self.on_ccxt_ohlcv_message)
 
     def on_ccxt_ohlcv_message(self, client, userdata, msg):
-        print(type(msg.topic))
-        print('received ccxt message ' + msg.payload.decode())
         if 'ccxt/ohlcv/add' in msg.topic:
             descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
-            self.ohlcv_config_service.add(descriptor)
+            self.state_service.add(descriptor)
         elif 'ccxt/ohlcv/remove' in msg.topic:
             descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
 
