@@ -5,11 +5,12 @@ import psycopg2.extras
 
 from config import PSQL_DSN, SCHEMA
 from utils.postgres import convert_datetime_to_timestamp
+from utils.singleton import Singleton
 
 logger = logging.getLogger()
 
 
-class SynchronousPostgresClient:
+class PostgresClient(Singleton):
 
     def __init__(self):
         self.conn = None
