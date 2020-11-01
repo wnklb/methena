@@ -11,12 +11,12 @@ class MQTTParser:
             raise Exception("exchange token not provided in mqtt topic")
 
         if config[2] == 'symbol':
-            symbols = config[3].split(',')
+            symbols = config[3].upper().replace('-', '/').split(',')
         else:
             raise Exception("symbol token not provided in mqtt topic")
 
         if config[4] == 'timeframe':
-            timeframes = config[5].replace('-', '/').split(',')
+            timeframes = config[5].split(',')
         else:
             raise Exception("timeframe token not provided in mqtt topic")
 
