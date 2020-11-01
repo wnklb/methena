@@ -45,8 +45,7 @@ class CCXTClient(Singleton):
     async def init_exchange_markets(self):
         exchange_ids = self.state_service.get_exchanges()
         tasks = [self.__init_exchange_market(exchange_id) for exchange_id in exchange_ids]
-        a = await asyncio.gather(*tasks)
-        return a
+        return await asyncio.gather(*tasks)
 
     def get_loaded_exchanges(self):
         return self.exchanges.values()
@@ -102,11 +101,3 @@ class CCXTClient(Singleton):
     # async def get_exchange_timeframes(self, exchange_id):
     #     exchange = await self.get_exchange(exchange_id)
     #     return exchange.timeframes
-
-
-async def main():
-    ccxt_client = CCXTClient()
-    await ccxt_client.get_exchange_timeframes('binance')
-
-if __name__ == '__main__':
-    asyncio.run(main())
