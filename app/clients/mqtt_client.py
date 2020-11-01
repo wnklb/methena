@@ -6,11 +6,12 @@ from services.state import StateService
 from utils.mqtt_parser import MQTTParser
 
 from config import MQTT_HOST, MQTT_PORT, MQTT_TOPIC_CCXT_OHLCV
+from utils.singleton import Singleton
 
 log = logging.getLogger()
 
 
-class MqttClient:
+class MqttClient(Singleton):
     def __init__(self):
         self.client = mqtt.Client(client_id="CCXT-OHLCV-Fetcher", clean_session=True, userdata=None)
         self.client.on_connect = self._on_connect

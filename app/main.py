@@ -15,9 +15,8 @@ async def main():
     with PostgresClient() as postgres_client:
         postgres_client.create_schema_if_not_exist(schema=SCHEMA)
 
-    ohlcv_fetcher = OHLCVFetcher()
-    with MqttClient() as mqttc:
-        await ohlcv_fetcher.main()
+    with MqttClient():
+        await OHLCVFetcher().main()
 
 
 if __name__ == '__main__':
