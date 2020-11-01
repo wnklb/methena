@@ -18,7 +18,7 @@ class CCXTClient(Singleton):
         self.postgres_client = PostgresClient()
         self.state_service = StateService()
 
-    def __del__(self):
+    async def close(self):
         for exchange_id, exchange in self.exchanges.items():
             try:
                 logger.debug("Trying to close exchange: {}".format(exchange_id))

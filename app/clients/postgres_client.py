@@ -16,6 +16,15 @@ class PostgresClient(Singleton):
         self.conn = None
         self.cur = None
 
+    def start(self):
+        self.conn = psycopg2.connect(dsn=PSQL_DSN)
+        self.cur = self.conn.cursor()
+        logger.info('Postgres connected!')
+        return self
+
+    def stop(self):
+        self.conn.close()
+
     def __enter__(self):
         self.conn = psycopg2.connect(dsn=PSQL_DSN)
         self.cur = self.conn.cursor()
@@ -23,6 +32,9 @@ class PostgresClient(Singleton):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.conn.close()
+
+    def setup(self):
+        self.create_schema_if_not_exist(SCHEMA)
 
     def execute(self, query):
         self.cur.execute(query)

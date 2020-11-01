@@ -23,15 +23,17 @@ class MqttClient(Singleton):
         self.parser = MQTTParser()
         self.state_service = StateService()
 
-    def __enter__(self):
+    def start(self):
         try:
             self.client.connect(MQTT_HOST, MQTT_PORT)
+            log.info('MQTT connected')
         except Exception as e:
             raise ConnectionError("Unable to connect to mqtt broker at '{}:{}'".format(MQTT_HOST, MQTT_PORT))
         self.client.loop_start()
+        log.info('MQTT loop started')
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def stop(self):
         self.client.loop_stop()
         self.client.disconnect()
 

@@ -1,9 +1,10 @@
 import asyncio
 import logging
 from datetime import datetime
-from time import time, sleep
+from time import time
 
 from clients.ccxt_client import CCXTClient
+from clients.mqtt_client import MqttClient
 from error import FetchError
 from clients.postgres_client import PostgresClient
 from services.state import StateService
@@ -18,6 +19,15 @@ class OHLCVFetcher:
         self.postgres_client = PostgresClient()
         self.ccxt_client = CCXTClient()
         self.state_service = StateService()
+        self.mqtt_client = MqttClient()
+
+    async def __aenter__(self):
+        self.mqtt_client.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.mqtt_client.stop()
+        await self.ccxt_client.close()
 
     async def main(self):
         while True:
@@ -27,6 +37,7 @@ class OHLCVFetcher:
             await self.__fetch()
 
     async def __fetch(self):
+        # TODO: Why is the cursor closed if this is instantiated via __anter__?
         with self.postgres_client:
             # Fetch OHLCV data asynchronously for each exchange.
             exchanges = self.ccxt_client.get_loaded_exchanges()

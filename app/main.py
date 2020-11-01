@@ -1,9 +1,8 @@
 import asyncio
 import logging
+import sys
 
-from clients.mqtt_client import MqttClient
 from clients.postgres_client import PostgresClient
-from config import SCHEMA
 from utils.log.logging import init_logging_config
 from services.fetcher import OHLCVFetcher
 
@@ -13,11 +12,15 @@ log = logging.getLogger(__name__)  # noqa F841
 
 async def main():
     with PostgresClient() as postgres_client:
-        postgres_client.create_schema_if_not_exist(schema=SCHEMA)
+        postgres_client.setup()
 
-    with MqttClient():
-        await OHLCVFetcher().main()
+    async with OHLCVFetcher() as ohlcv_fetcher:
+        await ohlcv_fetcher.main()
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print('Exit 0 via Keyboard Interrupt')
+        sys.exit(0)
