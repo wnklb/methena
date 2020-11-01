@@ -3,8 +3,8 @@ import logging
 import sys
 
 from clients.postgres_client import PostgresClient
-from utils.log.logging import init_logging_config
 from services.fetcher import OHLCVFetcher
+from utils.log.logging import init_logging_config
 
 init_logging_config()
 log = logging.getLogger(__name__)  # noqa F841

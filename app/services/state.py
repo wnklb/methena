@@ -1,5 +1,5 @@
 import logging
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 
 from clients.filesystem_client import FilesystemClient
 from utils.singleton import Singleton
@@ -53,4 +53,3 @@ class StateService(Singleton):
 
     def set_next_sync_timestamp(self):
         self.state['next_sync_timestamp'] = datetime.now() + timedelta(seconds=20)
-

@@ -5,8 +5,8 @@ from time import time
 
 from clients.ccxt_client import CCXTClient
 from clients.mqtt_client import MqttClient
-from error import FetchError
 from clients.postgres_client import PostgresClient
+from error import FetchError
 from services.state import StateService
 from utils.postgres import prepare_data_for_postgres
 
