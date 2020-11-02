@@ -27,7 +27,8 @@ class MqttClient(Singleton):
             self.client.connect(MQTT_HOST, MQTT_PORT)
             log.info('MQTT connected')
         except Exception as e:
-            raise ConnectionError("Unable to connect to mqtt broker at '{}:{}'".format(MQTT_HOST, MQTT_PORT))
+            raise ConnectionError("Unable to connect to mqtt broker at '{}:{}'. Error: {}".format(
+                MQTT_HOST, MQTT_PORT, e))
         self.client.loop_start()
         log.info('MQTT loop started')
         return self

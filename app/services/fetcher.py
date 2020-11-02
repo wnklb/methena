@@ -135,14 +135,14 @@ class OHLCVFetcher:
                     logger.error(e)
                     raise FetchError(
                         "Unable to fetch OHLCV data for exchange '{}' symbol '{}' timeframe '{}' "
-                        "for  5 times in a row given 'since' timestamp: {}"
-                            .format(exchange, symbol, timeframe, since))
+                        "for  5 times in a row given 'since' timestamp: {}".format(
+                            exchange, symbol, timeframe, since))
 
                 next_attempt_sec = 40 * (attempt + 1)
                 logger.warning(
                     "{} attempt to get OHLCV data for exchange '{}' symbol '{}' timeframe '{}' "
-                    "since '{}'  was unsuccessful. Retrying in {} seconds"
-                        .format(attempt, exchange, symbol, timeframe, since, next_attempt_sec))
+                    "since '{}'  was unsuccessful. Retrying in {} seconds".format(
+                        attempt, exchange, symbol, timeframe, since, next_attempt_sec))
                 logger.warning(e)
 
                 await asyncio.sleep(next_attempt_sec)

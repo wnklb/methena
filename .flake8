@@ -1,0 +1,12 @@
+[flake8]
+exclude =
+    __pycache__,
+    build,
+    dist,
+    mocks,
+    venv
+ignore =
+    F405,
+    F403
+max-complexity = 10
+max-line-length = 100
