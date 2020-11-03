@@ -9,12 +9,9 @@ log = logging.getLogger()
 
 class StateService(Singleton):
     state = {
-        'config': {},
+        'config': FilesystemClient.load_ohlcv_config(),
         'next_sync_timestamp': None,
     }
-
-    def __init__(self):
-        StateService.state['config'] = FilesystemClient.load_ohlcv_config()
 
     def get_state(self):
         return self.state

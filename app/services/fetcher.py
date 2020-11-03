@@ -14,12 +14,15 @@ logger = logging.getLogger(__name__)
 
 
 class OHLCVFetcher:
+    postgres_client = PostgresClient()
+    ccxt_client = CCXTService()
+    state_service = StateService()
+    mqtt_client = None
 
     def __init__(self):
-        self.postgres_client = PostgresClient()
-        self.ccxt_client = CCXTService()
-        self.state_service = StateService()
-        self.mqtt_client = MqttClient()
+        self.loop = asyncio.get_running_loop()
+        if self.mqtt_client is None:
+            OHLCVFetcher.mqtt_client = MqttClient(loop=self.loop)
 
     async def __aenter__(self):
         self.mqtt_client.start()
@@ -27,6 +30,7 @@ class OHLCVFetcher:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.mqtt_client.stop()
+        self.postgres_client.stop()
         await self.ccxt_client.close()
 
     async def main(self):
@@ -38,11 +42,11 @@ class OHLCVFetcher:
 
     async def __fetch(self):
         # TODO: Why is the cursor closed if this is instantiated via __anter__?
-        with self.postgres_client:
-            # Fetch OHLCV data asynchronously for each exchange.
-            exchanges = self.ccxt_client.get_loaded_exchanges()
-            tasks = [self.__process_exchange(exchange) for exchange in exchanges]
-            await asyncio.gather(*tasks)
+        # with self.postgres_client:
+        # Fetch OHLCV data asynchronously for each exchange.
+        exchanges = self.ccxt_client.get_loaded_exchanges()
+        tasks = [self.__process_exchange(exchange) for exchange in exchanges]
+        await asyncio.gather(*tasks)
 
     async def __process_exchange(self, exchange):
         try:

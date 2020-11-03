@@ -12,11 +12,9 @@ logger = logging.getLogger()
 
 
 class CCXTService(Singleton):
-
-    def __init__(self):
-        self.exchanges = {}
-        self.postgres_client = PostgresClient()
-        self.state_service = StateService()
+    exchanges = {}
+    postgres_client = PostgresClient()
+    state_service = StateService()
 
     async def close(self):
         for exchange_id, exchange in self.exchanges.items():
@@ -47,6 +45,20 @@ class CCXTService(Singleton):
         tasks = [self.__init_exchange_market(exchange_id) for exchange_id in exchange_ids]
         return await asyncio.gather(*tasks)
 
+    async def init_exchange_markets_manually(self, exchange_ids):
+        tasks = [self.__init_exchange_market(exchange_id) for exchange_id in exchange_ids]
+        return await asyncio.gather(*tasks)
+
+    def validate_descriptors(self, descriptors):
+        for exchange, symbols in descriptors.items():
+            for symbol, timeframes in symbols.items():
+                for timeframe in timeframes:
+                    descriptor = (exchange, symbol, timeframe)
+                    self.validate_descriptor(descriptor)
+
+    def validate_descriptor(self, descriptor):
+        pass
+
     def get_loaded_exchanges(self):
         return self.exchanges.values()
 
@@ -59,45 +71,46 @@ class CCXTService(Singleton):
             await asyncio.sleep((exchange.rateLimit / 1000) + 0.5)
             self.exchanges[exchange_id] = exchange
             logger.info("Successfully loaded markets for '{}' and added them.".format(exchange_id))
-            with self.postgres_client:
-                self.postgres_client.create_table_if_not_exists(SCHEMA, exchange_id)
+
+            # with self.postgres_client:
+            self.postgres_client.create_table_if_not_exists(SCHEMA, exchange_id)
         except Exception as e:  # TODO: find out the correct exception.
             logger.info("Couldn't load markets for exchange '{}'.".format(exchange_id))
             logger.error(e)
 
-    # @staticmethod
-    # async def get_exchanges():
-    #     return ccxt.exchanges
-    #
-    # async def get_exchange(self, exchange_id):
-    #     if exchange_id not in self.exchanges:
-    #         await self._init_exchange(exchange_id)
-    #     return self.exchanges.get(exchange_id)
-    #
-    # async def get_exchange_symbols(self, exchange_id):
-    #     exchange = await self.get_exchange(exchange_id)
-    #     return exchange.symbols
-    #
-    # async def get_exchange_bases(self, exchange_id):
-    #     exchange = await self.get_exchange(exchange_id)
-    #     symbols = exchange.symbols
-    #     split_char = '/'
-    #     bases = set()
-    #     for symbol in symbols:
-    #         base = symbol.split(split_char)[0]
-    #         bases.add(base)
-    #     return sorted(bases)
-    #
-    # async def get_exchange_quotes(self, exchange_id):
-    #     exchange = await self.get_exchange(exchange_id)
-    #     symbols = exchange.symbols
-    #     split_char = '/'
-    #     quotes = set()
-    #     for symbol in symbols:
-    #         quote = symbol.split(split_char)[1]
-    #         quotes.add(quote)
-    #     return sorted(quotes)
-    #
-    # async def get_exchange_timeframes(self, exchange_id):
-    #     exchange = await self.get_exchange(exchange_id)
-    #     return exchange.timeframes
+    @staticmethod
+    async def get_exchanges():
+        return ccxt.exchanges
+
+    async def get_exchange(self, exchange_id):
+        if exchange_id not in self.exchanges:
+            await self.__init_exchange_market(exchange_id)
+        return self.exchanges.get(exchange_id)
+
+    async def get_exchange_symbols(self, exchange_id):
+        exchange = await self.get_exchange(exchange_id)
+        return exchange.symbols
+
+    async def get_exchange_bases(self, exchange_id):
+        exchange = await self.get_exchange(exchange_id)
+        symbols = exchange.symbols
+        split_char = '/'
+        bases = set()
+        for symbol in symbols:
+            base = symbol.split(split_char)[0]
+            bases.add(base)
+        return sorted(bases)
+
+    async def get_exchange_quotes(self, exchange_id):
+        exchange = await self.get_exchange(exchange_id)
+        symbols = exchange.symbols
+        split_char = '/'
+        quotes = set()
+        for symbol in symbols:
+            quote = symbol.split(split_char)[1]
+            quotes.add(quote)
+        return sorted(quotes)
+
+    async def get_exchange_timeframes(self, exchange_id):
+        exchange = await self.get_exchange(exchange_id)
+        return exchange.timeframes

@@ -1,9 +1,10 @@
+import asyncio
 import logging
 
 import paho.mqtt.client as mqtt
 
 from config import MQTT_HOST, MQTT_PORT, MQTT_TOPIC_CCXT_OHLCV
-from services import StateService
+from services import CCXTService, StateService
 from utils.mqtt_parser import MQTTParser
 from utils.singleton import Singleton
 
@@ -11,16 +12,21 @@ log = logging.getLogger()
 
 
 class MqttClient(Singleton):
-    def __init__(self):
-        self.client = mqtt.Client(client_id="CCXT-OHLCV-Fetcher", clean_session=True, userdata=None)
-        self.client.on_connect = self._on_connect
-        self.client.on_disconnect = self._on_disconnect
-        self.client.on_message = self._on_message
-        self.client.on_publish = self._on_publish
-        self.client.on_subscribe = self._on_subscribe
-        self.client.on_unsubscribe = self._on_unsubscribe
-        self.parser = MQTTParser()
-        self.state_service = StateService()
+    client = None
+    parser = MQTTParser()
+    state_service = StateService()
+
+    def __init__(self, loop):
+        if self.client is None:
+            self.client = mqtt.Client(client_id="CCXT-OHLCV-Fetcher", clean_session=True,
+                                      userdata=None)
+            self.client.on_connect = self._on_connect
+            self.client.on_disconnect = self._on_disconnect
+            self.client.on_message = self._on_message
+            self.client.on_publish = self._on_publish
+            self.client.on_subscribe = self._on_subscribe
+            self.client.on_unsubscribe = self._on_unsubscribe
+        self.loop = loop
 
     def start(self):
         try:
@@ -61,7 +67,12 @@ class MqttClient(Singleton):
     def on_ccxt_ohlcv_message(self, client, userdata, msg):
         if 'ccxt/ohlcv/add' in msg.topic:
             descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
+            exchange_ids = list(descriptor.keys())
+            asyncio.ensure_future(CCXTService().init_exchange_markets_manually(exchange_ids),
+                                  loop=self.loop
+                                  )
             self.state_service.add(descriptor)
+
         elif 'ccxt/ohlcv/remove' in msg.topic:
             descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
 

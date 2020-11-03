@@ -11,10 +11,12 @@ logger = logging.getLogger()
 
 
 class PostgresClient(Singleton):
+    conn = None
+    cur = None
 
     def __init__(self):
-        self.conn = None
-        self.cur = None
+        if self.conn is None:
+            self.start()
 
     def start(self):
         self.conn = psycopg2.connect(dsn=PSQL_DSN)
@@ -23,14 +25,6 @@ class PostgresClient(Singleton):
         return self
 
     def stop(self):
-        self.conn.close()
-
-    def __enter__(self):
-        self.conn = psycopg2.connect(dsn=PSQL_DSN)
-        self.cur = self.conn.cursor()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
         self.conn.close()
 
     def setup(self):
