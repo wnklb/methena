@@ -72,33 +72,14 @@ Its main and sole purpose is to constantly fetch data for a given OHLCV descript
 
 Basically the interface for ccxt. In addition it handles the initialization and closing of markets
 
-## ToDos:
 
-### General
+### 3.3. StateService
 
-* Ability to specify a start and end timestamp from which to start fetching
-* What data do I want from logging? from monitoring? Or is this all part of the rest service?
 
-### OHLCVFetcher
+### 3.4. PostgresClient
 
-* Improve logging (what and how frequent; which values?; how does this work with high async count?)
-* Exception handling
-  * descriptor is not available
-  * something went wrong with the chunk?
-* Restart / Skip mechanism that is in sync with the synchronization mechanism and doesn't block
 
-### CCXTService
+### 3.5. MQTTClient
 
-* Refactor it into a service
-* Ability to check if a given descriptor is valid (possible with the exchange) and reject/notify if not
-* Ability to handle * flags for creation/deletion/modification
 
-### PostgresClient
-
-* Ability to create schema on init
-* Pooling
-
-### MQTTClient
-
-* Ability to handle * flags f
-* Make Singleton
+### 3.6. 

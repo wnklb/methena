@@ -29,8 +29,6 @@ def init_logging_config(
     if os.path.exists(path):
         with open(path, 'rt') as f:
             config = json.load(f)
-            # return config
-            logging.config.dictConfig(config)  # this, apparently, does not work with sanic log ...
+            logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=default_level)
-        # TODO: I have no idea what to return in this case
