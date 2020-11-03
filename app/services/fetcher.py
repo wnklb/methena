@@ -3,10 +3,10 @@ import logging
 from datetime import datetime
 from time import time
 
-from clients.ccxt_client import CCXTClient
 from clients.mqtt_client import MqttClient
 from clients.postgres_client import PostgresClient
 from error import FetchError
+from services.ccxt import CCXTService
 from services.state import StateService
 from utils.postgres import prepare_data_for_postgres
 
@@ -17,7 +17,7 @@ class OHLCVFetcher:
 
     def __init__(self):
         self.postgres_client = PostgresClient()
-        self.ccxt_client = CCXTClient()
+        self.ccxt_client = CCXTService()
         self.state_service = StateService()
         self.mqtt_client = MqttClient()
 

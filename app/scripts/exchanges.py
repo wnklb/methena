@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import asyncio
 
-from app.clients.ccxt_client import CCXTClient
+from services import CCXTService
 
 
 async def main():
-    ccxt_client = CCXTClient()
+    ccxt_client = CCXTService()
     print(await ccxt_client.get_exchanges())
     print(await ccxt_client.get_exchange('binance'))
 

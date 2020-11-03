@@ -11,7 +11,7 @@ from utils.singleton import Singleton
 logger = logging.getLogger()
 
 
-class CCXTClient(Singleton):
+class CCXTService(Singleton):
 
     def __init__(self):
         self.exchanges = {}

@@ -3,7 +3,7 @@ import logging
 import paho.mqtt.client as mqtt
 
 from config import MQTT_HOST, MQTT_PORT, MQTT_TOPIC_CCXT_OHLCV
-from services.state import StateService
+from services import StateService
 from utils.mqtt_parser import MQTTParser
 from utils.singleton import Singleton
 

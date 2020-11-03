@@ -3,7 +3,7 @@ import logging
 import sys
 
 from clients.postgres_client import PostgresClient
-from services.fetcher import OHLCVFetcher
+from services import OHLCVFetcher
 from utils.log.logging import init_logging_config
 
 init_logging_config()
