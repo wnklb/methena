@@ -49,15 +49,29 @@ class CCXTService(Singleton):
         tasks = [self.__init_exchange_market(exchange_id) for exchange_id in exchange_ids]
         return await asyncio.gather(*tasks)
 
-    def validate_descriptors(self, descriptors):
-        for exchange, symbols in descriptors.items():
-            for symbol, timeframes in symbols.items():
-                for timeframe in timeframes:
-                    descriptor = (exchange, symbol, timeframe)
-                    self.validate_descriptor(descriptor)
-
     def validate_descriptor(self, descriptor):
-        pass
+        descriptor_validated = {exchange: {} for exchange in descriptor.keys()}
+        for exchange, symbols in descriptor.items():
+            for symbol, timeframes in symbols.items():
+                if not self.validate_symbol(exchange, symbol):
+                    logger.warning(
+                        "Symbol {} is not available at exchange {}".format(symbol, exchange))
+                    continue
+                descriptor_validated[exchange][symbol] = []
+                for timeframe in timeframes:
+                    if self.validate_timeframe(exchange, timeframe):
+                        descriptor_validated[exchange][symbol].append(timeframe)
+                    else:
+                        logger.warning(
+                            "Timeframe {} is not available at {}.{}".format(timeframe, exchange,
+                                                                            symbol))
+        return descriptor_validated
+
+    def validate_symbol(self, exchange, symbol):
+        return True if symbol in self.exchanges[exchange].symbols else False
+
+    def validate_timeframe(self, exchange, timeframe):
+        return True if timeframe in self.exchanges[exchange].timeframes else False
 
     def get_loaded_exchanges(self):
         return self.exchanges.values()

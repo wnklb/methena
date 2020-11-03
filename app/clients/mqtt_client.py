@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import logging
 
 import paho.mqtt.client as mqtt
@@ -14,6 +15,7 @@ log = logging.getLogger()
 class MqttClient(Singleton):
     client = None
     parser = MQTTParser()
+    ccxt_service = CCXTService()
     state_service = StateService()
 
     def __init__(self, loop):
@@ -66,15 +68,19 @@ class MqttClient(Singleton):
 
     def on_ccxt_ohlcv_message(self, client, userdata, msg):
         if 'ccxt/ohlcv/add' in msg.topic:
-            descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
-            exchange_ids = list(descriptor.keys())
-            asyncio.ensure_future(CCXTService().init_exchange_markets_manually(exchange_ids),
-                                  loop=self.loop
-                                  )
-            self.state_service.add(descriptor)
+            descriptors = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
+            exchange_ids = list(descriptors.keys())
+            task = asyncio.ensure_future(
+                CCXTService().init_exchange_markets_manually(exchange_ids), loop=self.loop)
+            task.add_done_callback(
+                functools.partial(self.__callback_on_ccxt_ohlcv_message_add, descriptors))
 
         elif 'ccxt/ohlcv/remove' in msg.topic:
-            descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
+            descriptors = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
+
+    def __callback_on_ccxt_ohlcv_message_add(self, descriptor, result):
+        descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
+        self.state_service.add(descriptor_validated)
 
     # The callback for when a PUBLISH message is received from the server.
     def _on_disconnect(self, client, userdata, rc):
