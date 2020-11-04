@@ -76,13 +76,13 @@ class CCXTService(Singleton):
         descriptor_validated = {exchange: {} for exchange in descriptor.keys()}
         for exchange, symbols in descriptor.items():
             for symbol, timeframes in symbols.items():
-                if not self.validate_symbol(exchange, symbol):
+                if not self.__validate_symbol(exchange, symbol):
                     logger.warning(
                         "Symbol {} is not available at exchange {}".format(symbol, exchange))
                     continue
                 descriptor_validated[exchange][symbol] = []
                 for timeframe in timeframes:
-                    if self.validate_timeframe(exchange, timeframe):
+                    if self.__validate_timeframe(exchange, timeframe):
                         descriptor_validated[exchange][symbol].append(timeframe)
                     else:
                         logger.warning(
@@ -90,10 +90,10 @@ class CCXTService(Singleton):
                                                                             symbol))
         return descriptor_validated
 
-    def validate_symbol(self, exchange, symbol):
+    def __validate_symbol(self, exchange, symbol):
         return True if symbol in self.exchanges[exchange].symbols else False
 
-    def validate_timeframe(self, exchange, timeframe):
+    def __validate_timeframe(self, exchange, timeframe):
         return True if timeframe in self.exchanges[exchange].timeframes else False
 
     def get_loaded_exchanges(self):

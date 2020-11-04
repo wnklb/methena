@@ -57,9 +57,9 @@ class MqttClient(Singleton):
     # The callback for when the client receives a CONNACK response from the server.
     def __on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            log.debug("Successfully connected to broker: '{}'".format(mqtt.connack_string(rc)))
+            log.info("Successfully connected to broker. '{}'".format(mqtt.connack_string(rc)))
         else:
-            log.debug("Error connecting to broker: '{}'".format(mqtt.connack_string(rc)))
+            log.warning("Error connecting to broker: '{}'".format(mqtt.connack_string(rc)))
 
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
@@ -67,6 +67,7 @@ class MqttClient(Singleton):
         client.message_callback_add(MQTT_TOPIC_CCXT_OHLCV, self.on_ccxt_ohlcv_message)
 
     def on_ccxt_ohlcv_message(self, client, userdata, msg):
+        log.info('MQTT received topic: {}'.format(msg.topic))
         raw_descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
         if 'ccxt/ohlcv/add' in msg.topic:
             self.__on_ccxt_ohlcv_message_add(raw_descriptor)
