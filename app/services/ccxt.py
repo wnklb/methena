@@ -46,6 +46,32 @@ class CCXTService(Singleton):
         tasks = [self.__init_exchange_market(exchange_id) for exchange_id in exchange_ids]
         return await asyncio.gather(*tasks)
 
+    def expand_flagged_descriptor(self, raw_descriptor):
+        exchanges, symbols, timeframes = raw_descriptor
+
+        return {
+            exchange: {
+                symbol: self.__get_timeframe_level(exchange, symbol, timeframes)
+                for symbol in self.__get_symbol_level(exchange, symbols)
+            } for exchange in self.__get_exchange_level(exchanges)
+        }
+
+    def __get_exchange_level(self, exchanges):
+        if '*' == exchanges:
+            return ccxt.exchanges
+        return exchanges
+
+    def __get_symbol_level(self, exchange, symbols):
+        if '*' == symbols:
+            return self.exchanges[exchange].symbols
+        return symbols
+
+    def __get_timeframe_level(self, exchange, symbol, timeframes):
+        # Timeframe level
+        if '*' == timeframes:
+            return self.exchanges[exchange].timeframes
+        return timeframes
+
     def validate_descriptor(self, descriptor):
         descriptor_validated = {exchange: {} for exchange in descriptor.keys()}
         for exchange, symbols in descriptor.items():
@@ -90,7 +116,7 @@ class CCXTService(Singleton):
             logger.error(e)
 
     @staticmethod
-    async def get_exchanges():
+    def get_exchanges():
         return ccxt.exchanges
 
     async def get_exchange(self, exchange_id):

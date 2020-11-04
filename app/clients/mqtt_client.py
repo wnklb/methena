@@ -67,27 +67,32 @@ class MqttClient(Singleton):
         client.message_callback_add(MQTT_TOPIC_CCXT_OHLCV, self.on_ccxt_ohlcv_message)
 
     def on_ccxt_ohlcv_message(self, client, userdata, msg):
-        descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
+        raw_descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
         if 'ccxt/ohlcv/add' in msg.topic:
-            self.__on_ccxt_ohlcv_message_add(descriptor)
+            self.__on_ccxt_ohlcv_message_add(raw_descriptor)
         elif 'ccxt/ohlcv/remove' in msg.topic:
-            self.__on_ccxt_ohlcv_message_remove(descriptor)
+            self.__on_ccxt_ohlcv_message_remove(raw_descriptor)
         elif 'ccxt/ohlcv/replace' in msg.topic:
             pass
 
-    def __on_ccxt_ohlcv_message_remove(self, descriptor):
-        descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
-        self.state_service.remove(descriptor_validated)
-
-    def __on_ccxt_ohlcv_message_add(self, descriptor):
-        task = asyncio.ensure_future(
-            CCXTService().init_exchange_markets(list(descriptor.keys())), loop=self.loop)
+    def __on_ccxt_ohlcv_message_add(self, raw_descriptor):
+        exchanges = raw_descriptor[0]
+        if exchanges == '*':
+            exchanges = self.ccxt_service.get_exchanges()
+        task = asyncio.ensure_future(self.ccxt_service.init_exchange_markets(exchanges),
+                                     loop=self.loop)
         task.add_done_callback(
-            functools.partial(self.__callback_on_ccxt_ohlcv_message_add, descriptor))
+            functools.partial(self.__callback_on_ccxt_ohlcv_message_add, raw_descriptor))
 
-    def __callback_on_ccxt_ohlcv_message_add(self, descriptor, result):
+    def __callback_on_ccxt_ohlcv_message_add(self, raw_descriptor, result):
+        descriptor = self.ccxt_service.expand_flagged_descriptor(raw_descriptor)
         descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
         self.state_service.add(descriptor_validated)
+
+    def __on_ccxt_ohlcv_message_remove(self, raw_descriptor):
+        descriptor = self.ccxt_service.expand_flagged_descriptor(raw_descriptor)
+        descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
+        self.state_service.remove(descriptor_validated)
 
     # The callback for when a PUBLISH message is received from the server.
     def __on_disconnect(self, client, userdata, rc):
