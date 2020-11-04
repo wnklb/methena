@@ -4,7 +4,8 @@ exclude =
     build,
     dist,
     mocks,
-    venv
+    venv,
+    .git,
 ignore =
     F405,
     F403
