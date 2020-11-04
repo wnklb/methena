@@ -16,6 +16,12 @@ the [ccxt library](https://github.com/ccxt/ccxt). It comes with the following fe
 
 TODO: describe correct setup
 
+### 2.1. Dependencies
+
+```bash
+pip install -r app/requirements.txt
+```
+
 ### 2.1. Environment Variables
 
 Copy `.env_template` to `.env` and populate values.
@@ -98,5 +104,12 @@ Basically the interface for ccxt. In addition it handles the initialization and 
 | `ccxt/ohlcv/add/` | `exchange/*/symbol/*/timeframe/*` | Adds the given descriptor. `*` can be a single value or a comma-separated list of values (e.g. `binance` or `binance,bitfinex`) |
 | `ccxt/ohlcv/remove/` | `exchange/*/symbol/*/timeframe/*` | Removes the given descriptor. Same patterns apply |
 | `ccxt/ohlcv/replace/` | `exchange/*/symbol/*/timeframe/*` | Replaces the given descriptor. Depending on its lowest specificity, replaces the whole provided tree (e.g. `*` flag for symbol replaces the timeframes of every currently set symbol. |
+
+
+#### 3.5.2. Publishing via CLI
+
+```bash
+mosquitto_pub -t ccxt/ohlcv/add/exchange/binance/symbol/ETH-BTC/timeframe/1d -m ""
+```
 
 ### 3.6. 
