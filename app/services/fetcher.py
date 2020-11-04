@@ -37,7 +37,6 @@ class OHLCVFetcher:
         while True:
             self.state_service.set_new_config_flag(False)
             await self.__fetch()
-            # sleep(1)
             exchanges_to_close = self.state_service.get_exchanges_to_close()
             await self.ccxt_service.close(exchanges_to_close)
             self.state_service.clear_exchanges_to_close()
@@ -57,17 +56,20 @@ class OHLCVFetcher:
                 for symbol in symbols:
                     if self.state_service.has_new_config():
                         logger.warning(
-                            'Breaking out of symbol loops for {} to sync'.format(exchange.id))
+                            '[{}] - Breaking out of symbol loop to sync'.format(exchange.id))
                         break
                     await self.__process_symbol(exchange, symbol)
             else:
-                logger.debug("Exchange '{}' has no OHLCV data available. Skipping entirely.".format(
-                    exchange))
+                logger.debug(
+                    "[{}] - Exchange has no OHLCV data available. Skipping entirely.".format(
+                        exchange))
         except RuntimeError as e:
-            logger.info("RuntimeError: still trying to access {}. Skipping".format(exchange.id))
+            logger.info(
+                "RuntimeError: [{}] - still trying to access deleted exchange. Skipping".format(
+                    exchange.id))
             logger.info(e)
         except Exception as e:
-            logger.error("Unexpected behaviour when trying to access the exchange {}. "
+            logger.error("[{}] - Unexpected behaviour when trying to access the exchange. "
                          "Skipping till next sync.".format(exchange.id))
             logger.error(e)
 
@@ -79,7 +81,8 @@ class OHLCVFetcher:
         for timeframe in timeframes:
             if self.state_service.has_new_config():
                 logger.debug(
-                    'Breaking out of timeframe loops for {}.{} to sync'.format(exchange.id, symbol))
+                    '[{}] [{}] - Breaking out of timeframe loop to sync'.format(exchange.id,
+                                                                                symbol))
                 break
             try:
                 await self.__process_timeseries(exchange, symbol, timeframe)
@@ -97,7 +100,8 @@ class OHLCVFetcher:
         while True:
             if self.state_service.has_new_config():
                 logger.debug(
-                    'Breaking out of loop {}.{}.{} to sync'.format(exchange.id, symbol, timeframe))
+                    '[{}] [{}] [{}] - Breaking out of loop to sync'.format(exchange.id, symbol,
+                                                                           timeframe))
                 break
             try:
                 ohlcv_data = await self.__fetch_timeseries_chunk(exchange, symbol, timeframe, since)
@@ -150,15 +154,14 @@ class OHLCVFetcher:
                 if attempt == 4:
                     logger.error(e)
                     raise FetchError(
-                        "Unable to fetch OHLCV data for exchange '{}' symbol '{}' timeframe '{}' "
-                        "for  5 times in a row given 'since' timestamp: {}".format(
-                            exchange, symbol, timeframe, since))
+                        "[{}] [{}] [{}] - Unable to fetch OHLCV data 5 times in a row given "
+                        "'since' timestamp: {}".format(exchange, symbol, timeframe, since))
 
                 next_attempt_sec = 40 * (attempt + 1)
                 logger.warning(
-                    "{} attempt to get OHLCV data for exchange '{}' symbol '{}' timeframe '{}' "
-                    "since '{}'  was unsuccessful. Retrying in {} seconds".format(
-                        attempt, exchange, symbol, timeframe, since, next_attempt_sec))
+                    "[{}] [{}] [{}] - {} attempt to get OHLCV data since '{}'  was unsuccessful. "
+                    "Retrying in {} seconds".format(attempt, exchange, symbol, timeframe, since,
+                                                    next_attempt_sec))
                 logger.warning(e)
 
                 await asyncio.sleep(next_attempt_sec)
