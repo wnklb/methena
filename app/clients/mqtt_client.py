@@ -22,12 +22,12 @@ class MqttClient(Singleton):
         if self.client is None:
             self.client = mqtt.Client(client_id="CCXT-OHLCV-Fetcher", clean_session=True,
                                       userdata=None)
-            self.client.on_connect = self._on_connect
-            self.client.on_disconnect = self._on_disconnect
-            self.client.on_message = self._on_message
-            self.client.on_publish = self._on_publish
-            self.client.on_subscribe = self._on_subscribe
-            self.client.on_unsubscribe = self._on_unsubscribe
+            self.client.on_connect = self.__on_connect
+            self.client.on_disconnect = self.__on_disconnect
+            self.client.on_message = self.__on_message
+            self.client.on_publish = self.__on_publish
+            self.client.on_subscribe = self.__on_subscribe
+            self.client.on_unsubscribe = self.__on_unsubscribe
         self.loop = loop
 
     def start(self):
@@ -55,7 +55,7 @@ class MqttClient(Singleton):
         self.client.publish(topic, payload, qos, retain)
 
     # The callback for when the client receives a CONNACK response from the server.
-    def _on_connect(self, client, userdata, flags, rc):
+    def __on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             log.debug("Successfully connected to broker: '{}'".format(mqtt.connack_string(rc)))
         else:
@@ -86,20 +86,20 @@ class MqttClient(Singleton):
         self.state_service.add(descriptor_validated)
 
     # The callback for when a PUBLISH message is received from the server.
-    def _on_disconnect(self, client, userdata, rc):
+    def __on_disconnect(self, client, userdata, rc):
         if rc != 0:
             log.warning("Unexpected disconnection.")
 
-    def _on_message(self, client, userdata, msg):
+    def __on_message(self, client, userdata, msg):
         log.debug(msg.topic + " " + str(msg.payload))
 
-    def _on_publish(self, client, userdata, mid):
+    def __on_publish(self, client, userdata, mid):
         pass
 
-    def _on_subscribe(self, client, userdata, mid, granted_qos):
+    def __on_subscribe(self, client, userdata, mid, granted_qos):
         pass
 
-    def _on_unsubscribe(self, client, userdata, mid):
+    def __on_unsubscribe(self, client, userdata, mid):
         pass
 
 
