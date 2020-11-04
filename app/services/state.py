@@ -38,12 +38,25 @@ class StateService(Singleton):
                         self.state['config'][exchange][symbol] = new_timeframes
                     else:
                         self.state['config'][exchange][symbol] = timeframes
+                    # TODO: logging
             else:
                 self.state['config'][exchange] = {symbol: timeframes for symbol, timeframes in
                                                   symbols.items()}
+                # TODO: logging
 
     def remove(self, descriptor):
-        pass
+        config = self.state['config']
+        for exchange, symbols in descriptor.items():
+            for symbol, timeframes in symbols.items():
+                for timeframe in timeframes:
+                    config[exchange][symbol].remove(timeframe)
+                    log.info('--> CMD <-- Removed {}.{}.{}'.format(exchange, symbol, timeframe))
+                if len(config[exchange][symbol]) == 0:
+                    del config[exchange][symbol]
+                    log.info('--> CMD <-- Removed {}.{}'.format(exchange, symbol))
+            if len(config[exchange]):
+                del config[exchange]
+                log.info('--> CMD <-- Removed {}'.format(exchange))
 
     def get_next_sync_timestamp(self):
         return self.state['next_sync_timestamp']

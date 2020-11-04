@@ -71,9 +71,13 @@ class MqttClient(Singleton):
         if 'ccxt/ohlcv/add' in msg.topic:
             self.__on_ccxt_ohlcv_message_add(descriptor)
         elif 'ccxt/ohlcv/remove' in msg.topic:
-            pass
+            self.__on_ccxt_ohlcv_message_remove(descriptor)
         elif 'ccxt/ohlcv/replace' in msg.topic:
             pass
+
+    def __on_ccxt_ohlcv_message_remove(self, descriptor):
+        descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
+        self.state_service.remove(descriptor_validated)
 
     def __on_ccxt_ohlcv_message_add(self, descriptor):
         task = asyncio.ensure_future(
