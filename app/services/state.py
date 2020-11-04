@@ -10,6 +10,7 @@ class StateService(Singleton):
     state = {
         'config': FilesystemClient.load_ohlcv_config(),
         'has_new_config': False,
+        'exchanges_to_close': []
     }
 
     def get_state(self):
@@ -68,7 +69,17 @@ class StateService(Singleton):
                 if len(config[exchange][symbol]) == 0:
                     del config[exchange][symbol]
                     log.info('--> CMD <-- Removed {}.{}'.format(exchange, symbol))
-            if len(config[exchange]):
+            if len(config[exchange]) == 0:
                 del config[exchange]
+                self.add_exchange_to_close(exchange)
                 log.info('--> CMD <-- Removed {}'.format(exchange))
         self.set_new_config_flag(True)
+
+    def add_exchange_to_close(self, exchange):
+        self.state['exchanges_to_close'].append(exchange)
+
+    def get_exchanges_to_close(self):
+        return self.state['exchanges_to_close']
+
+    def clear_exchanges_to_close(self):
+        self.state['exchanges_to_close'] = []

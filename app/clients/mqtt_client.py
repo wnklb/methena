@@ -86,12 +86,12 @@ class MqttClient(Singleton):
             functools.partial(self.__callback_on_ccxt_ohlcv_message_add, raw_descriptor))
 
     def __callback_on_ccxt_ohlcv_message_add(self, raw_descriptor, result):
-        descriptor = self.ccxt_service.expand_flagged_descriptor(raw_descriptor)
+        descriptor = self.ccxt_service.build_descriptor(raw_descriptor)
         descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
         self.state_service.add(descriptor_validated)
 
     def __on_ccxt_ohlcv_message_remove(self, raw_descriptor):
-        descriptor = self.ccxt_service.expand_flagged_descriptor(raw_descriptor)
+        descriptor = self.ccxt_service.build_descriptor(raw_descriptor)
         descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
         self.state_service.remove(descriptor_validated)
 
@@ -111,10 +111,3 @@ class MqttClient(Singleton):
 
     def __on_unsubscribe(self, client, userdata, mid):
         pass
-
-
-if __name__ == '__main__':
-    with MqttClient() as mqttc:
-        # mqttc.publish(topic='ccxt', payload='runeuening from python')
-        while True:
-            pass

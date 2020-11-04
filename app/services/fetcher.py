@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class OHLCVFetcher:
     postgres_client = PostgresClient()
-    ccxt_client = CCXTService()
+    ccxt_service = CCXTService()
     state_service = StateService()
     mqtt_client = None
 
@@ -25,25 +25,26 @@ class OHLCVFetcher:
 
     async def __aenter__(self):
         self.mqtt_client.start()
-        await self.ccxt_client.init_exchange_markets()
+        await self.ccxt_service.init_exchange_markets()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.mqtt_client.stop()
         self.postgres_client.stop()
-        await self.ccxt_client.close()
+        await self.ccxt_service.close()
 
     async def main(self):
         while True:
             self.state_service.set_new_config_flag(False)
-            # Exit condition via mqtt
             await self.__fetch()
+            # sleep(1)
+            exchanges_to_close = self.state_service.get_exchanges_to_close()
+            await self.ccxt_service.close(exchanges_to_close)
+            self.state_service.clear_exchanges_to_close()
 
     async def __fetch(self):
-        # TODO: Why is the cursor closed if this is instantiated via __anter__?
-        # with self.postgres_client:
         # Fetch OHLCV data asynchronously for each exchange.
-        exchanges = self.ccxt_client.get_loaded_exchanges()
+        exchanges = self.ccxt_service.get_loaded_exchanges()
         tasks = [self.__process_exchange(exchange) for exchange in exchanges]
         await asyncio.gather(*tasks)
 
@@ -60,11 +61,14 @@ class OHLCVFetcher:
                         break
                     await self.__process_symbol(exchange, symbol)
             else:
-                logger.debug(
-                    "Exchange '{}' has no OHLCV data available. Skipping entirely.".format(
-                        exchange))
+                logger.debug("Exchange '{}' has no OHLCV data available. Skipping entirely.".format(
+                    exchange))
+        except RuntimeError as e:
+            logger.info("RuntimeError: still trying to access {}. Skipping".format(exchange.id))
+            logger.info(e)
         except Exception as e:
-            logger.error("Unexpected behaviour when trying to access the exchange. Skipping!")
+            logger.error("Unexpected behaviour when trying to access the exchange {}. "
+                         "Skipping till next sync.".format(exchange.id))
             logger.error(e)
 
     async def __process_symbol(self, exchange, symbol):
@@ -118,7 +122,7 @@ class OHLCVFetcher:
 
         duration = time() - start_time
         logger.info(
-            "[{}] [{}] [{}] - Completed and fetched {} entrties for taking {:.2f}s.".format(
+            "[{}] [{}] [{}] - Completed and fetched {} entries for taking {:.2f}s.".format(
                 exchange.id, symbol, timeframe, count, duration))
 
     def __get_since_timestamp(self, exchange, symbol, timeframe):
@@ -136,7 +140,8 @@ class OHLCVFetcher:
 
         return since
 
-    async def __fetch_timeseries_chunk(self, exchange, symbol, timeframe, since):
+    @staticmethod
+    async def __fetch_timeseries_chunk(exchange, symbol, timeframe, since):
         for attempt in range(5):
             try:
                 await asyncio.sleep((exchange.rateLimit / 1000) + 0.5)  # +0.5 for safety margin.

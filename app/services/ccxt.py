@@ -16,15 +16,20 @@ class CCXTService(Singleton):
     postgres_client = PostgresClient()
     state_service = StateService()
 
-    async def close(self):
-        for exchange_id, exchange in self.exchanges.items():
+    async def close(self, exchanges=None):
+        if exchanges is None:
+            exchanges = self.exchanges.items()
+        else:
+            exchanges = {exchange: self.exchanges[exchange] for exchange in exchanges}
+        for exchange_id, exchange in exchanges.items():
             try:
                 logger.debug("Trying to close exchange: {}".format(exchange_id))
-                asyncio.ensure_future(exchange.close())
+                await exchange.close()
                 logger.info("Successfully closed exchange: {}".format(exchange_id))
             except Exception as e:
                 logger.error("Error during exchange closing!")
                 logger.error(e)
+            del self.exchanges[exchange_id]
 
     # async def __aenter__(self):
     #     await self.__init_exchange_markets(self.state['exchange_ids'])
@@ -46,7 +51,7 @@ class CCXTService(Singleton):
         tasks = [self.__init_exchange_market(exchange_id) for exchange_id in exchange_ids]
         return await asyncio.gather(*tasks)
 
-    def expand_flagged_descriptor(self, raw_descriptor):
+    def build_descriptor(self, raw_descriptor):
         exchanges, symbols, timeframes = raw_descriptor
 
         return {
