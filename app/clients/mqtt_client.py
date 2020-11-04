@@ -67,20 +67,19 @@ class MqttClient(Singleton):
         client.message_callback_add(MQTT_TOPIC_CCXT_OHLCV, self.on_ccxt_ohlcv_message)
 
     def on_ccxt_ohlcv_message(self, client, userdata, msg):
+        descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
         if 'ccxt/ohlcv/add' in msg.topic:
-            self.__on_ccxt_ohlcv_message_add(msg)
+            self.__on_ccxt_ohlcv_message_add(descriptor)
         elif 'ccxt/ohlcv/remove' in msg.topic:
-            descriptors = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
+            pass
         elif 'ccxt/ohlcv/replace' in msg.topic:
             pass
 
-    def __on_ccxt_ohlcv_message_add(self, msg):
-        descriptors = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
-        exchange_ids = list(descriptors.keys())
+    def __on_ccxt_ohlcv_message_add(self, descriptor):
         task = asyncio.ensure_future(
-            CCXTService().init_exchange_markets_manually(exchange_ids), loop=self.loop)
+            CCXTService().init_exchange_markets_manually(list(descriptor.keys())), loop=self.loop)
         task.add_done_callback(
-            functools.partial(self.__callback_on_ccxt_ohlcv_message_add, descriptors))
+            functools.partial(self.__callback_on_ccxt_ohlcv_message_add, descriptor))
 
     def __callback_on_ccxt_ohlcv_message_add(self, descriptor, result):
         descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
