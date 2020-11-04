@@ -72,14 +72,18 @@ Its main and sole purpose is to constantly fetch data for a given OHLCV descript
 
 Basically the interface for ccxt. In addition it handles the initialization and closing of markets
 
-
 ### 3.3. StateService
-
 
 ### 3.4. PostgresClient
 
-
 ### 3.5. MQTTClient
 
+#### 3.5.1. Topics
+
+| Base-Path | Path-Extension | Behaviour |
+|---|---|---|
+| `ccxt/ohlcv/add/` | `exchange/*/symbol/*/timeframe/*` | Adds the given descriptor. `*` can be a single value or a comma-separated list of values (e.g. `binance` or `binance,bitfinex`) |
+| `ccxt/ohlcv/remove/` | `exchange/*/symbol/*/timeframe/*` | Removes the given descriptor. Same patterns apply |
+| `ccxt/ohlcv/replace/` | `exchange/*/symbol/*/timeframe/*` | Replaces the given descriptor. Depending on its lowest specificity, replaces the whole provided tree (e.g. `*` flag for symbol replaces the timeframes of every currently set symbol. |
 
 ### 3.6. 

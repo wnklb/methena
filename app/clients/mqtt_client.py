@@ -68,15 +68,19 @@ class MqttClient(Singleton):
 
     def on_ccxt_ohlcv_message(self, client, userdata, msg):
         if 'ccxt/ohlcv/add' in msg.topic:
-            descriptors = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
-            exchange_ids = list(descriptors.keys())
-            task = asyncio.ensure_future(
-                CCXTService().init_exchange_markets_manually(exchange_ids), loop=self.loop)
-            task.add_done_callback(
-                functools.partial(self.__callback_on_ccxt_ohlcv_message_add, descriptors))
-
+            self.__on_ccxt_ohlcv_message_add(msg)
         elif 'ccxt/ohlcv/remove' in msg.topic:
             descriptors = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
+        elif 'ccxt/ohlcv/replace' in msg.topic:
+            pass
+
+    def __on_ccxt_ohlcv_message_add(self, msg):
+        descriptors = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
+        exchange_ids = list(descriptors.keys())
+        task = asyncio.ensure_future(
+            CCXTService().init_exchange_markets_manually(exchange_ids), loop=self.loop)
+        task.add_done_callback(
+            functools.partial(self.__callback_on_ccxt_ohlcv_message_add, descriptors))
 
     def __callback_on_ccxt_ohlcv_message_add(self, descriptor, result):
         descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
