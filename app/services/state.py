@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timedelta
 
 from clients.filesystem_client import FilesystemClient
 from utils.singleton import Singleton
@@ -10,7 +9,7 @@ log = logging.getLogger()
 class StateService(Singleton):
     state = {
         'config': FilesystemClient.load_ohlcv_config(),
-        'next_sync_timestamp': None,
+        'has_new_config': False,
     }
 
     def get_state(self):
@@ -27,6 +26,12 @@ class StateService(Singleton):
 
     def get_config(self):
         return self.state['config']
+
+    def has_new_config(self):
+        return self.state['has_new_config']
+
+    def set_new_config_flag(self, state):
+        self.state['has_new_config'] = state
 
     def add(self, descriptor):
         config = self.state['config']
@@ -51,6 +56,7 @@ class StateService(Singleton):
                     config[exchange] = {symbol: timeframes}
                     log.info(
                         '--> CMD <-- Added {} to {} with {}'.format(symbol, exchange, timeframes))
+        self.set_new_config_flag(True)
 
     def remove(self, descriptor):
         config = self.state['config']
@@ -65,9 +71,4 @@ class StateService(Singleton):
             if len(config[exchange]):
                 del config[exchange]
                 log.info('--> CMD <-- Removed {}'.format(exchange))
-
-    def get_next_sync_timestamp(self):
-        return self.state['next_sync_timestamp']
-
-    def set_next_sync_timestamp(self):
-        self.state['next_sync_timestamp'] = datetime.now() + timedelta(seconds=20)
+        self.set_new_config_flag(True)

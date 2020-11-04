@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from datetime import datetime
 from time import time
 
 from clients.mqtt_client import MqttClient
@@ -26,6 +25,7 @@ class OHLCVFetcher:
 
     async def __aenter__(self):
         self.mqtt_client.start()
+        await self.ccxt_client.init_exchange_markets()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -35,8 +35,7 @@ class OHLCVFetcher:
 
     async def main(self):
         while True:
-            self.state_service.set_next_sync_timestamp()
-            await self.ccxt_client.init_exchange_markets()
+            self.state_service.set_new_config_flag(False)
             # Exit condition via mqtt
             await self.__fetch()
 
@@ -55,9 +54,13 @@ class OHLCVFetcher:
                 symbols = symbols_state.keys() if symbols_state else exchange.symbols
 
                 for symbol in symbols:
+                    if self.state_service.has_new_config():
+                        logger.warning(
+                            'Breaking out of symbol loops for {} to sync'.format(exchange.id))
+                        break
                     await self.__process_symbol(exchange, symbol)
             else:
-                logger.warning(
+                logger.debug(
                     "Exchange '{}' has no OHLCV data available. Skipping entirely.".format(
                         exchange))
         except Exception as e:
@@ -70,6 +73,10 @@ class OHLCVFetcher:
             timeframes = exchange.timeframes
 
         for timeframe in timeframes:
+            if self.state_service.has_new_config():
+                logger.debug(
+                    'Breaking out of timeframe loops for {}.{} to sync'.format(exchange.id, symbol))
+                break
             try:
                 await self.__process_timeseries(exchange, symbol, timeframe)
             except Exception as e:
@@ -82,11 +89,11 @@ class OHLCVFetcher:
         since = self.__get_since_timestamp(exchange, symbol, timeframe)
         count = 0
         start_time = time()
-        next_sync = self.state_service.get_next_sync_timestamp()
 
         while True:
-            if datetime.now() > next_sync:
-                logger.warning('Breaking out of loop to sync - {}'.format(next_sync))
+            if self.state_service.has_new_config():
+                logger.debug(
+                    'Breaking out of loop {}.{}.{} to sync'.format(exchange.id, symbol, timeframe))
                 break
             try:
                 ohlcv_data = await self.__fetch_timeseries_chunk(exchange, symbol, timeframe, since)

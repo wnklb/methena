@@ -40,12 +40,9 @@ class CCXTService(Singleton):
     #             logger.error("Error during exchange closing!")
     #             logger.error(e)
 
-    async def init_exchange_markets(self):
-        exchange_ids = self.state_service.get_exchanges()
-        tasks = [self.__init_exchange_market(exchange_id) for exchange_id in exchange_ids]
-        return await asyncio.gather(*tasks)
-
-    async def init_exchange_markets_manually(self, exchange_ids):
+    async def init_exchange_markets(self, exchange_ids=None):
+        if exchange_ids is None:
+            exchange_ids = self.state_service.get_exchanges()
         tasks = [self.__init_exchange_market(exchange_id) for exchange_id in exchange_ids]
         return await asyncio.gather(*tasks)
 

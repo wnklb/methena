@@ -81,7 +81,7 @@ class MqttClient(Singleton):
 
     def __on_ccxt_ohlcv_message_add(self, descriptor):
         task = asyncio.ensure_future(
-            CCXTService().init_exchange_markets_manually(list(descriptor.keys())), loop=self.loop)
+            CCXTService().init_exchange_markets(list(descriptor.keys())), loop=self.loop)
         task.add_done_callback(
             functools.partial(self.__callback_on_ccxt_ohlcv_message_add, descriptor))
 
