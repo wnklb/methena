@@ -29,20 +29,28 @@ class StateService(Singleton):
         return self.state['config']
 
     def add(self, descriptor):
+        config = self.state['config']
         for exchange, symbols in descriptor.items():
-            if exchange in self.state['config']:
+            if exchange in config:
                 for symbol, timeframes in symbols.items():
-                    if symbol in self.state['config'][exchange]:
-                        new_timeframes = list(
-                            set(self.state['config'][exchange][symbol] + timeframes))
-                        self.state['config'][exchange][symbol] = new_timeframes
+                    if symbol in config[exchange]:
+                        unique_new = list(set(timeframes) - set(config[exchange][symbol]))
+                        if len(unique_new) == 0:
+                            log.info('--> CMD <-- {} already set on {}.{}'.format(
+                                timeframes, exchange, symbol))
+                            continue
+                        config[exchange][symbol] = unique_new + config[exchange][symbol]
+                        log.info(
+                            '--> CMD <-- Added {} to {}.{}'.format(unique_new, exchange, symbol))
                     else:
-                        self.state['config'][exchange][symbol] = timeframes
-                    # TODO: logging
+                        config[exchange][symbol] = timeframes
+                        log.info(
+                            '--> CMD <-- Added {} to {}.{}'.format(timeframes, exchange, symbol))
             else:
-                self.state['config'][exchange] = {symbol: timeframes for symbol, timeframes in
-                                                  symbols.items()}
-                # TODO: logging
+                for symbol, timeframes in symbols.items():
+                    config[exchange] = {symbol: timeframes}
+                    log.info(
+                        '--> CMD <-- Added {} to {} with {}'.format(symbol, exchange, timeframes))
 
     def remove(self, descriptor):
         config = self.state['config']
