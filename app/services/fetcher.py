@@ -61,16 +61,16 @@ class OHLCVFetcher:
                     await self.__process_symbol(exchange, symbol)
             else:
                 logger.debug(
-                    "[{}] - Exchange has no OHLCV data available. Skipping entirely.".format(
+                    '[{}] - Exchange has no OHLCV data available. Skipping entirely.'.format(
                         exchange))
         except RuntimeError as e:
             logger.info(
-                "RuntimeError: [{}] - still trying to access deleted exchange. Skipping".format(
+                'RuntimeError: [{}] - still trying to access deleted exchange. Skipping'.format(
                     exchange.id))
             logger.info(e)
         except Exception as e:
-            logger.error("[{}] - Unexpected behaviour when trying to access the exchange. "
-                         "Skipping till next sync.".format(exchange.id))
+            logger.error('[{}] - Unexpected behaviour when trying to access the exchange. '
+                         'Skipping till next sync.'.format(exchange.id))
             logger.error(e)
 
     async def __process_symbol(self, exchange, symbol):
@@ -80,9 +80,8 @@ class OHLCVFetcher:
 
         for timeframe in timeframes:
             if self.state_service.has_new_config():
-                logger.debug(
-                    '[{}] [{}] - Breaking out of timeframe loop to sync'.format(exchange.id,
-                                                                                symbol))
+                logger.debug('[{}] [{}] - Breaking out of timeframe loop to sync'.format(
+                    exchange.id, symbol))
                 break
             try:
                 await self.__process_timeseries(exchange, symbol, timeframe)
@@ -90,18 +89,16 @@ class OHLCVFetcher:
                 logger.error(e)
 
     async def __process_timeseries(self, exchange, symbol, timeframe):
-        logger.info(
-            "[{}] [{}] [{}] - Attempting to fetch OHLCV timeseries".format(exchange.id, symbol,
-                                                                           timeframe))
+        logger.info('[{}] [{}] [{}] - Attempting to fetch OHLCV timeseries'.format(
+            exchange.id, symbol, timeframe))
         since = self.__get_since_timestamp(exchange, symbol, timeframe)
         count = 0
         start_time = time()
 
         while True:
             if self.state_service.has_new_config():
-                logger.debug(
-                    '[{}] [{}] [{}] - Breaking out of loop to sync'.format(exchange.id, symbol,
-                                                                           timeframe))
+                logger.debug('[{}] [{}] [{}] - Breaking out of loop to sync'.format(
+                    exchange.id, symbol, timeframe))
                 break
             try:
                 ohlcv_data = await self.__fetch_timeseries_chunk(exchange, symbol, timeframe, since)
@@ -121,22 +118,20 @@ class OHLCVFetcher:
             # For now, we don't care why/that this fails und just pop it.
             # TODO: handling of psql error should be implemented later.
             self.postgres_client.insert_many(values, exchange.id)
-            logger.debug("[{}] [{}] [{}] - Successfully inserted OHLCV chunk.".format(
+            logger.debug('[{}] [{}] [{}] - Successfully inserted OHLCV chunk.'.format(
                 exchange.id, symbol, timeframe))
 
         duration = time() - start_time
-        logger.info(
-            "[{}] [{}] [{}] - Completed and fetched {} entries for taking {:.2f}s.".format(
-                exchange.id, symbol, timeframe, count, duration))
+        logger.info('[{}] [{}] [{}] - Completed and fetched {} entries for taking {:.2f}s.'.format(
+            exchange.id, symbol, timeframe, count, duration))
 
     def __get_since_timestamp(self, exchange, symbol, timeframe):
         since = None
         try:
             since = self.postgres_client.fetch_latest_timestamp(exchange.id, symbol, timeframe)
         except Exception as e:
-            logger.info(
-                "[{}] [{}] [{}] - No latest timestamp available.".format(exchange.id, symbol,
-                                                                         timeframe))
+            logger.info('[{}] [{}] [{}] - No latest timestamp available.'.format(
+                exchange.id, symbol, timeframe))
             logger.info(e)
 
         if since is None:
@@ -144,23 +139,26 @@ class OHLCVFetcher:
 
         return since
 
-    @staticmethod
-    async def __fetch_timeseries_chunk(exchange, symbol, timeframe, since):
+    async def __fetch_timeseries_chunk(self, exchange, symbol, timeframe, since):
         for attempt in range(5):
             try:
                 await asyncio.sleep((exchange.rateLimit / 1000) + 0.5)  # +0.5 for safety margin.
                 return await exchange.fetch_ohlcv(symbol, since=since, timeframe=timeframe)
             except Exception as e:
+                if self.state_service.has_new_config():
+                    logger.debug('[{}] [{}] [{}] - Breaking out of fetch to sync'.format(
+                        exchange.id, symbol, timeframe))
+                    break
                 if attempt == 4:
                     logger.error(e)
                     raise FetchError(
-                        "[{}] [{}] [{}] - Unable to fetch OHLCV data 5 times in a row given "
-                        "'since' timestamp: {}".format(exchange, symbol, timeframe, since))
+                        '[{}] [{}] [{}] - Unable to fetch OHLCV data 5 times in a row given '
+                        'since timestamp: {}'.format(exchange, symbol, timeframe, since))
 
                 next_attempt_sec = 40 * (attempt + 1)
                 logger.warning(
-                    "[{}] [{}] [{}] - {} attempt to get OHLCV data since '{}'  was unsuccessful. "
-                    "Retrying in {} seconds".format(attempt, exchange, symbol, timeframe, since,
+                    '[{}] [{}] [{}] - {} attempt to get OHLCV data since {}  was unsuccessful. '
+                    'Retrying in {} seconds'.format(attempt, exchange, symbol, timeframe, since,
                                                     next_attempt_sec))
                 logger.warning(e)
 

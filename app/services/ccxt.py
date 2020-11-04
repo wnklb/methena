@@ -23,11 +23,11 @@ class CCXTService(Singleton):
             exchanges = {exchange: self.exchanges[exchange] for exchange in exchanges}
         for exchange_id, exchange in exchanges.items():
             try:
-                logger.debug("Trying to close exchange: {}".format(exchange_id))
+                logger.debug('Trying to close exchange: {}'.format(exchange_id))
                 await exchange.close()
-                logger.info("Successfully closed exchange: {}".format(exchange_id))
+                logger.info('Successfully closed exchange: {}'.format(exchange_id))
             except Exception as e:
-                logger.error("Error during exchange closing!")
+                logger.error('Error during exchange closing!')
                 logger.error(e)
             del self.exchanges[exchange_id]
 
@@ -38,11 +38,11 @@ class CCXTService(Singleton):
     # async def __aexit__(self, exc_type, exc_val, exc_tb):
     #     for exchange_id, exchange in self.exchanges.items():
     #         try:
-    #             logger.debug("Trying to close exchange: {}".format(exchange_id))
+    #             logger.debug('Trying to close exchange: {}'.format(exchange_id))
     #             await exchange.close()
-    #             logger.info("Successfully closed exchange: {}".format(exchange_id))
+    #             logger.info('Successfully closed exchange: {}'.format(exchange_id))
     #         except Exception as e:
-    #             logger.error("Error during exchange closing!")
+    #             logger.error('Error during exchange closing!')
     #             logger.error(e)
 
     async def init_exchange_markets(self, exchange_ids=None):
@@ -56,7 +56,7 @@ class CCXTService(Singleton):
 
         return {
             exchange: {
-                symbol: self.__get_timeframe_level(exchange, symbol, timeframes)
+                symbol: self.__get_timeframe_level(exchange, timeframes)
                 for symbol in self.__get_symbol_level(exchange, symbols)
             } for exchange in self.__get_exchange_level(exchanges)
         }
@@ -71,8 +71,7 @@ class CCXTService(Singleton):
             return self.exchanges[exchange].symbols
         return symbols
 
-    def __get_timeframe_level(self, exchange, symbol, timeframes):
-        # Timeframe level
+    def __get_timeframe_level(self, exchange, timeframes):
         if '*' == timeframes:
             return self.exchanges[exchange].timeframes
         return timeframes
@@ -83,16 +82,15 @@ class CCXTService(Singleton):
             for symbol, timeframes in symbols.items():
                 if not self.__validate_symbol(exchange, symbol):
                     logger.warning(
-                        "Symbol {} is not available at exchange {}".format(symbol, exchange))
+                        'Symbol {} is not available at exchange {}'.format(symbol, exchange))
                     continue
                 descriptor_validated[exchange][symbol] = []
                 for timeframe in timeframes:
                     if self.__validate_timeframe(exchange, timeframe):
                         descriptor_validated[exchange][symbol].append(timeframe)
                     else:
-                        logger.warning(
-                            "Timeframe {} is not available at {}.{}".format(timeframe, exchange,
-                                                                            symbol))
+                        logger.warning('Timeframe {} is not available at {}.{}'.format(
+                            timeframe, exchange, symbol))
         return descriptor_validated
 
     def __validate_symbol(self, exchange, symbol):
@@ -112,12 +110,11 @@ class CCXTService(Singleton):
             await exchange.load_markets()
             await asyncio.sleep((exchange.rateLimit / 1000) + 0.5)
             self.exchanges[exchange_id] = exchange
-            logger.info("Successfully loaded markets for '{}' and added them.".format(exchange_id))
+            logger.info('Successfully loaded markets for {} and added them.'.format(exchange_id))
 
-            # with self.postgres_client:
             self.postgres_client.create_table_if_not_exists(SCHEMA, exchange_id)
         except Exception as e:  # TODO: find out the correct exception.
-            logger.info("Couldn't load markets for exchange '{}'.".format(exchange_id))
+            logger.info('Unable to load markets for exchange {}.'.format(exchange_id))
             logger.error(e)
 
     @staticmethod

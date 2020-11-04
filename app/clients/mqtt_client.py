@@ -20,7 +20,7 @@ class MqttClient(Singleton):
 
     def __init__(self, loop):
         if self.client is None:
-            self.client = mqtt.Client(client_id="CCXT-OHLCV-Fetcher", clean_session=True,
+            self.client = mqtt.Client(client_id='CCXT-OHLCV-Fetcher', clean_session=True,
                                       userdata=None)
             self.client.on_connect = self.__on_connect
             self.client.on_disconnect = self.__on_disconnect
@@ -35,7 +35,7 @@ class MqttClient(Singleton):
             self.client.connect(MQTT_HOST, MQTT_PORT)
             log.info('MQTT connected')
         except Exception as e:
-            raise ConnectionError("Unable to connect to mqtt broker at '{}:{}'. Error: {}".format(
+            raise ConnectionError('Unable to connect to mqtt broker at {}:{}. Error: {}'.format(
                 MQTT_HOST, MQTT_PORT, e))
         self.client.loop_start()
         log.info('MQTT loop started')
@@ -57,9 +57,9 @@ class MqttClient(Singleton):
     # The callback for when the client receives a CONNACK response from the server.
     def __on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            log.info("Successfully connected to broker. '{}'".format(mqtt.connack_string(rc)))
+            log.info('Successfully connected to broker. {}'.format(mqtt.connack_string(rc)))
         else:
-            log.warning("Error connecting to broker: '{}'".format(mqtt.connack_string(rc)))
+            log.warning('Error connecting to broker: {}'.format(mqtt.connack_string(rc)))
 
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
@@ -98,10 +98,10 @@ class MqttClient(Singleton):
     # The callback for when a PUBLISH message is received from the server.
     def __on_disconnect(self, client, userdata, rc):
         if rc != 0:
-            log.warning("Unexpected disconnection.")
+            log.warning('Unexpected disconnection.')
 
     def __on_message(self, client, userdata, msg):
-        log.debug(msg.topic + " " + str(msg.payload))
+        log.debug(msg.topic + ' ' + str(msg.payload))
 
     def __on_publish(self, client, userdata, mid):
         pass

@@ -37,7 +37,7 @@ class PostgresClient(Singleton):
         self.conn.commit()
 
     def create_schema_if_not_exist(self, schema: str):
-        query = "CREATE SCHEMA IF NOT EXISTS {schema};".format(schema=schema)
+        query = """CREATE SCHEMA IF NOT EXISTS {schema};""".format(schema=schema)
         self.execute(query)
         self.commit()
 
