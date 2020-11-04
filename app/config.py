@@ -19,4 +19,4 @@ SCHEMA = getenv('SCHEMA')
 
 MQTT_HOST = getenv('MQTT_HOST')
 MQTT_PORT = get_int('MQTT_PORT', '1883')
-MQTT_TOPIC_CCXT_OHLCV = getenv('MQTT_TOPIC_CCXT_OHLCV', 'ccxt/ohlcv')
+MQTT_TOPIC_CCXT_OHLCV = getenv('MQTT_TOPIC_CCXT_OHLCV', 'ccxt/ohlcv/#')
