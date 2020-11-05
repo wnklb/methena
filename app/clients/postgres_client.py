@@ -13,11 +13,13 @@ logger = logging.getLogger()
 class PostgresClient(Singleton):
     conn = None
     cur = None
+    setup_done = False
 
     def __init__(self):
         if self.conn is None:
             self.start()
-        self.setup()
+        if not self.setup_done:
+            self.setup()
 
     def start(self):
         self.conn = psycopg2.connect(dsn=PSQL_DSN)
@@ -32,6 +34,7 @@ class PostgresClient(Singleton):
         self.create_schema_if_not_exist(SCHEMA_CCXT_OHLCV)
         self.create_schema_if_not_exist(SCHEMA_METHENA)
         self.create_table_ccxt_ohlcv_fetcher_state_if_not_exists()
+        self.setup_done = True
 
     def __execute(self, query, values=None):
         self.cur.execute(query, values)
