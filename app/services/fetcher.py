@@ -155,7 +155,7 @@ class OHLCVFetcher:
                         '[{}] [{}] [{}] - Unable to fetch OHLCV data 5 times in a row given '
                         'since timestamp: {}'.format(exchange, symbol, timeframe, since))
 
-                next_attempt_sec = 40 * (attempt + 1)
+                next_attempt_sec = 20 * (attempt + 1)
                 logger.warning(
                     '[{}] [{}] [{}] - {} attempt to get OHLCV data since {}  was unsuccessful. '
                     'Retrying in {} seconds'.format(attempt, exchange, symbol, timeframe, since,
