@@ -35,7 +35,7 @@ class OHLCVFetcher:
 
     async def main(self):
         while True:
-            self.state_service.set_new_config_flag(False)
+            self.state_service.set_has_new_config_flag(False)
             await self.__fetch()
             exchanges_to_close = self.state_service.get_exchanges_to_close()
             await self.ccxt_service.close(exchanges_to_close)

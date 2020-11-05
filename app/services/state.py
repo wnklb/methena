@@ -31,10 +31,10 @@ class StateService(Singleton):
     def has_new_config(self):
         return self.state['has_new_config']
 
-    def set_new_config_flag(self, state):
+    def set_has_new_config_flag(self, state):
         self.state['has_new_config'] = state
 
-    def add(self, descriptor):
+    def add_descriptor(self, descriptor):
         config = self.state['config']
         for exchange, symbols in descriptor.items():
             if exchange in config:
@@ -59,7 +59,7 @@ class StateService(Singleton):
                         '--> CMD <-- Added {} to {} with {}'.format(symbol, exchange, timeframes))
         self.set_new_config_flag(True)
 
-    def remove(self, descriptor):
+    def remove_descriptor(self, descriptor):
         config = self.state['config']
         for exchange, symbols in descriptor.items():
             for symbol, timeframes in symbols.items():
