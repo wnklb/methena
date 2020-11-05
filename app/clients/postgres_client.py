@@ -30,16 +30,16 @@ class PostgresClient(Singleton):
     def setup(self):
         self.create_schema_if_not_exist(SCHEMA)
 
-    def execute(self, query):
-        self.cur.execute(query)
+    def __execute(self, query, values=None):
+        self.cur.execute(query, values)
 
-    def commit(self):
+    def __commit(self):
         self.conn.commit()
 
     def create_schema_if_not_exist(self, schema: str):
         query = """CREATE SCHEMA IF NOT EXISTS {schema};""".format(schema=schema)
-        self.execute(query)
-        self.commit()
+        self.__execute(query)
+        self.__commit()
 
     def create_table_if_not_exists(self, schema, table):
         query = """
@@ -53,16 +53,20 @@ class PostgresClient(Singleton):
             close float,
             volume float
         );""".format(schema=schema, table=table)
-        self.execute(query)
-        self.commit()
+        self.__execute(query)
+        self.__commit()
+
+    def insert(self, query, values):
+        self.__execute(query, values)
+        self.__commit()
 
     def insert_many(self, values, table, schema=SCHEMA, page_size=1000):
         query = "INSERT INTO {schema}.{table} VALUES %s;".format(schema=schema, table=table)
         psycopg2.extras.execute_values(self.cur, query, values, page_size=page_size)
-        self.conn.commit()
+        self.__commit()
 
     def fetch_one(self, query):
-        self.execute(query)
+        self.__execute(query)
         return self.cur.fetchone()
 
     def fetch_latest_timestamp(self, exchange, symbol, timeframe):
@@ -83,3 +87,24 @@ class PostgresClient(Singleton):
             return
         timestamp = convert_datetime_to_timestamp(datetime_[0])
         return timestamp
+
+    def set_ccxt_ohlcv_fetcher_state(self, state):
+        query = """
+        insert into methena.ccxt_ohlcv_fetcher_state (id, state, timestamp)
+        values (1, %s, CURRENT_TIMESTAMP)
+        ON CONFLICT (id)
+        DO UPDATE
+        SET
+            state = EXCLUDED.state,
+            timestamp = EXCLUDED.timestamp
+        ;
+        """
+        self.insert(query, (state,))
+
+    def get_ccxt_ohlcv_fetcher_state(self):
+        query = """
+        SELECT state
+        FROM methena.ccxt_ohlcv_fetcher_state
+        WHERE id = 1;
+        """
+        return self.fetch_one(query)[0]
