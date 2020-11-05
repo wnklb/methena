@@ -7,7 +7,7 @@ from clients.postgres_client import PostgresClient
 from services.state import StateService
 from utils.singleton import Singleton
 
-logger = logging.getLogger()
+log = logging.getLogger()
 
 
 class CCXTService(Singleton):
@@ -22,12 +22,12 @@ class CCXTService(Singleton):
             exchanges = {exchange: self.exchanges[exchange] for exchange in exchanges}
         for exchange_id, exchange in exchanges.items():
             try:
-                logger.debug('Trying to close exchange: {}'.format(exchange_id))
+                log.debug('Trying to close exchange: {}'.format(exchange_id))
                 await exchange.close()
-                logger.info('Successfully closed exchange: {}'.format(exchange_id))
+                log.info('Successfully closed exchange: {}'.format(exchange_id))
             except Exception as e:
-                logger.error('Error during exchange closing!')
-                logger.error(e)
+                log.error('Error during exchange closing!')
+                log.error(e)
             del self.exchanges[exchange_id]
 
     # async def __aenter__(self):
@@ -80,7 +80,7 @@ class CCXTService(Singleton):
         for exchange, symbols in descriptor.items():
             for symbol, timeframes in symbols.items():
                 if not self.__validate_symbol(exchange, symbol):
-                    logger.warning(
+                    log.warning(
                         'Symbol {} is not available at exchange {}'.format(symbol, exchange))
                     continue
                 descriptor_validated[exchange][symbol] = []
@@ -88,7 +88,7 @@ class CCXTService(Singleton):
                     if self.__validate_timeframe(exchange, timeframe):
                         descriptor_validated[exchange][symbol].append(timeframe)
                     else:
-                        logger.warning('Timeframe {} is not available at {}.{}'.format(
+                        log.warning('Timeframe {} is not available at {}.{}'.format(
                             timeframe, exchange, symbol))
         return descriptor_validated
 
@@ -109,12 +109,12 @@ class CCXTService(Singleton):
             await exchange.load_markets()
             await asyncio.sleep((exchange.rateLimit / 1000) + 0.5)
             self.exchanges[exchange_id] = exchange
-            logger.info('Successfully loaded markets for {} and added them.'.format(exchange_id))
+            log.info('Successfully loaded markets for {} and added them.'.format(exchange_id))
 
             self.postgres_client.create_exchange_ohlcv_table_if_not_exists(exchange_id)
         except Exception as e:  # TODO: find out the correct exception.
-            logger.error('Unable to load markets for exchange {}.'.format(exchange_id))
-            logger.error(e)
+            log.error('Unable to load markets for exchange {}.'.format(exchange_id))
+            log.error(e)
 
     @staticmethod
     def get_exchanges():

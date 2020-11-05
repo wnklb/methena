@@ -9,7 +9,7 @@ from services.ccxt import CCXTService
 from services.state import StateService
 from utils.postgres import prepare_data_for_postgres
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger()
 
 
 class OHLCVFetcher:
@@ -55,23 +55,23 @@ class OHLCVFetcher:
 
                 for symbol in symbols:
                     if self.state_service.has_new_config():
-                        logger.warning(
+                        log.warning(
                             '[{}] - Breaking out of symbol loop to sync'.format(exchange.id))
                         break
                     await self.__process_symbol(exchange, symbol)
             else:
-                logger.debug(
+                log.debug(
                     '[{}] - Exchange has no OHLCV data available. Skipping entirely.'.format(
                         exchange))
         except RuntimeError as e:
-            logger.info(
+            log.info(
                 'RuntimeError: [{}] - still trying to access deleted exchange. Skipping'.format(
                     exchange.id))
-            logger.info(e)
+            log.info(e)
         except Exception as e:
-            logger.error('[{}] - Unexpected behaviour when trying to access the exchange. '
-                         'Skipping till next sync.'.format(exchange.id))
-            logger.error(e)
+            log.error('[{}] - Unexpected behaviour when trying to access the exchange. '
+                      'Skipping till next sync.'.format(exchange.id))
+            log.error(e)
 
     async def __process_symbol(self, exchange, symbol):
         timeframes = self.state_service.get_timeframes(exchange.id, symbol)
@@ -80,16 +80,16 @@ class OHLCVFetcher:
 
         for timeframe in timeframes:
             if self.state_service.has_new_config():
-                logger.debug('[{}] [{}] - Breaking out of timeframe loop to sync'.format(
+                log.debug('[{}] [{}] - Breaking out of timeframe loop to sync'.format(
                     exchange.id, symbol))
                 break
             try:
                 await self.__process_timeseries(exchange, symbol, timeframe)
             except Exception as e:
-                logger.error(e)
+                log.error(e)
 
     async def __process_timeseries(self, exchange, symbol, timeframe):
-        logger.info('[{}] [{}] [{}] - Attempting to fetch OHLCV timeseries'.format(
+        log.info('[{}] [{}] [{}] - Attempting to fetch OHLCV timeseries'.format(
             exchange.id, symbol, timeframe))
         since = self.__get_since_timestamp(exchange, symbol, timeframe)
         count = 0
@@ -97,13 +97,13 @@ class OHLCVFetcher:
 
         while True:
             if self.state_service.has_new_config():
-                logger.debug('[{}] [{}] [{}] - Breaking out of loop to sync'.format(
+                log.debug('[{}] [{}] [{}] - Breaking out of loop to sync'.format(
                     exchange.id, symbol, timeframe))
                 break
             try:
                 ohlcv_data = await self.__fetch_timeseries_chunk(exchange, symbol, timeframe, since)
             except FetchError as e:
-                logger.error(e)
+                log.error(e)
                 break  # there is something wrong and we skip this OHLCV timeseries for now.
 
             latest_timestamp = ohlcv_data[-1][0]
@@ -118,11 +118,11 @@ class OHLCVFetcher:
             # For now, we don't care why/that this fails und just pop it.
             # TODO: handling of psql error should be implemented later.
             self.postgres_client.insert_many(values, exchange.id)
-            logger.debug('[{}] [{}] [{}] - Successfully inserted OHLCV chunk.'.format(
+            log.debug('[{}] [{}] [{}] - Successfully inserted OHLCV chunk.'.format(
                 exchange.id, symbol, timeframe))
 
         duration = time() - start_time
-        logger.info('[{}] [{}] [{}] - Completed and fetched {} entries for taking {:.2f}s.'.format(
+        log.info('[{}] [{}] [{}] - Completed and fetched {} entries for taking {:.2f}s.'.format(
             exchange.id, symbol, timeframe, count, duration))
 
     def __get_since_timestamp(self, exchange, symbol, timeframe):
@@ -130,9 +130,9 @@ class OHLCVFetcher:
         try:
             since = self.postgres_client.fetch_latest_timestamp(exchange.id, symbol, timeframe)
         except Exception as e:
-            logger.info('[{}] [{}] [{}] - No latest timestamp available.'.format(
+            log.info('[{}] [{}] [{}] - No latest timestamp available.'.format(
                 exchange.id, symbol, timeframe))
-            logger.info(e)
+            log.info(e)
 
         if since is None:
             since = exchange.parse8601('2010-01-01T00:00:00Z')
@@ -146,21 +146,21 @@ class OHLCVFetcher:
                 return await exchange.fetch_ohlcv(symbol, since=since, timeframe=timeframe)
             except Exception as e:
                 if self.state_service.has_new_config():
-                    logger.debug('[{}] [{}] [{}] - Breaking out of fetch to sync'.format(
+                    log.debug('[{}] [{}] [{}] - Breaking out of fetch to sync'.format(
                         exchange.id, symbol, timeframe))
                     break
                 if attempt == 4:
-                    logger.error(e)
+                    log.error(e)
                     raise FetchError(
                         '[{}] [{}] [{}] - Unable to fetch OHLCV data 5 times in a row given '
                         'since timestamp: {}'.format(exchange, symbol, timeframe, since))
 
                 next_attempt_sec = 20 * (attempt + 1)
-                logger.warning(
+                log.warning(
                     '[{}] [{}] [{}] - {} attempt to get OHLCV data since {}  was unsuccessful. '
                     'Retrying in {} seconds'.format(attempt, exchange, symbol, timeframe, since,
                                                     next_attempt_sec))
-                logger.warning(e)
+                log.warning(e)
 
                 await asyncio.sleep(next_attempt_sec)
 

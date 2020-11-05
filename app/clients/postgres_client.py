@@ -7,13 +7,14 @@ from config import PSQL_DSN, SCHEMA_CCXT_OHLCV, SCHEMA_METHENA
 from utils.postgres import convert_datetime_to_timestamp
 from utils.singleton import Singleton
 
-logger = logging.getLogger()
+log = logging.getLogger()
 
 
 class PostgresClient(Singleton):
     conn = None
     cur = None
     setup_done = False
+
 
     def __init__(self):
         if self.conn is None:
@@ -24,7 +25,7 @@ class PostgresClient(Singleton):
     def start(self):
         self.conn = psycopg2.connect(dsn=PSQL_DSN)
         self.cur = self.conn.cursor()
-        logger.info('Postgres connected!')
+        log.info('Postgres connected!')
         return self
 
     def stop(self):
