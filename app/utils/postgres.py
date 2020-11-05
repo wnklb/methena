@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-logger = logging.getLogger()
+log = logging.getLogger()
 
 
 def prepare_data_for_postgres(symbol: str, timeframe: str, ohlcv_data: list) -> list:

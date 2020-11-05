@@ -20,7 +20,7 @@ class MqttClient(Singleton):
 
     def __init__(self, loop):
         if self.client is None:
-            self.client = mqtt.Client(client_id="CCXT-OHLCV-Fetcher", clean_session=True,
+            self.client = mqtt.Client(client_id='CCXT-OHLCV-Fetcher', clean_session=True,
                                       userdata=None)
             self.client.on_connect = self.__on_connect
             self.client.on_disconnect = self.__on_disconnect
@@ -35,7 +35,7 @@ class MqttClient(Singleton):
             self.client.connect(MQTT_HOST, MQTT_PORT)
             log.info('MQTT connected')
         except Exception as e:
-            raise ConnectionError("Unable to connect to mqtt broker at '{}:{}'. Error: {}".format(
+            raise ConnectionError('Unable to connect to mqtt broker at {}:{}. Error: {}'.format(
                 MQTT_HOST, MQTT_PORT, e))
         self.client.loop_start()
         log.info('MQTT loop started')
@@ -57,9 +57,9 @@ class MqttClient(Singleton):
     # The callback for when the client receives a CONNACK response from the server.
     def __on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            log.debug("Successfully connected to broker: '{}'".format(mqtt.connack_string(rc)))
+            log.info('Successfully connected to broker. {}'.format(mqtt.connack_string(rc)))
         else:
-            log.debug("Error connecting to broker: '{}'".format(mqtt.connack_string(rc)))
+            log.warning('Error connecting to broker: {}'.format(mqtt.connack_string(rc)))
 
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
@@ -67,6 +67,7 @@ class MqttClient(Singleton):
         client.message_callback_add(MQTT_TOPIC_CCXT_OHLCV, self.on_ccxt_ohlcv_message)
 
     def on_ccxt_ohlcv_message(self, client, userdata, msg):
+        log.info('MQTT received topic: {}'.format(msg.topic))
         raw_descriptor = self.parser.parse_ccxt_ohlcv_topic(msg.topic, msg.payload)
         if 'ccxt/ohlcv/add' in msg.topic:
             self.__on_ccxt_ohlcv_message_add(raw_descriptor)
@@ -85,22 +86,22 @@ class MqttClient(Singleton):
             functools.partial(self.__callback_on_ccxt_ohlcv_message_add, raw_descriptor))
 
     def __callback_on_ccxt_ohlcv_message_add(self, raw_descriptor, result):
-        descriptor = self.ccxt_service.expand_flagged_descriptor(raw_descriptor)
+        descriptor = self.ccxt_service.build_descriptor(raw_descriptor)
         descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
-        self.state_service.add(descriptor_validated)
+        self.state_service.add_descriptor(descriptor_validated)
 
     def __on_ccxt_ohlcv_message_remove(self, raw_descriptor):
-        descriptor = self.ccxt_service.expand_flagged_descriptor(raw_descriptor)
+        descriptor = self.ccxt_service.build_descriptor(raw_descriptor)
         descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
-        self.state_service.remove(descriptor_validated)
+        self.state_service.remove_descriptor(descriptor_validated)
 
     # The callback for when a PUBLISH message is received from the server.
     def __on_disconnect(self, client, userdata, rc):
         if rc != 0:
-            log.warning("Unexpected disconnection.")
+            log.warning('Unexpected disconnection.')
 
     def __on_message(self, client, userdata, msg):
-        log.debug(msg.topic + " " + str(msg.payload))
+        log.debug(msg.topic + ' ' + str(msg.payload))
 
     def __on_publish(self, client, userdata, mid):
         pass
