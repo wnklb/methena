@@ -110,10 +110,3 @@ class MqttClient(Singleton):
 
     def __on_unsubscribe(self, client, userdata, mid):
         pass
-
-
-if __name__ == '__main__':
-    with MqttClient() as mqttc:
-        # mqttc.publish(topic='ccxt', payload='runeuening from python')
-        while True:
-            pass
