@@ -19,7 +19,8 @@ PSQL_DSN = getenv('PSQL_DSN')
 OHLCV_DB_STATE = get_bool('OHLCV_DB_STATE', 'False')
 OHLCV_CONFIG_FILE = getenv('OHLCV_CONFIG_FILE', 'ohlcv_config.json')
 
-SCHEMA = getenv('SCHEMA')
+SCHEMA_CCXT_OHLCV = getenv('SCHEMA_CCXT_OHLCV')
+SCHEMA_METHENA = getenv('SCHEMA_METHENA')
 
 MQTT_HOST = getenv('MQTT_HOST')
 MQTT_PORT = get_int('MQTT_PORT', '1883')

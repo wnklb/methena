@@ -1,20 +1,47 @@
+import json
 import logging
 
 from clients.filesystem_client import FilesystemClient
+from clients.postgres_client import PostgresClient
+from config import OHLCV_DB_STATE
+from error import NoStateProvidedError
 from utils.singleton import Singleton
 
 log = logging.getLogger()
 
 
-class StateService(Singleton):
+def load_ohlcv_config_from_file():
     state = {
         'config': FilesystemClient.load_ohlcv_config(),
         'has_new_config': False,
         'exchanges_to_close': []
     }
+    log.info('StateService initialized state from config file.')
+    return state
 
-    def get_state(self):
-        return self.state
+
+class StateService(Singleton):
+    postgres_client = PostgresClient()
+
+    if OHLCV_DB_STATE:
+        try:
+            state = postgres_client.get_ccxt_ohlcv_fetcher_state()
+            log.info('StateService initialized state from database.')
+        except TypeError as e:
+            log.warning('There is no persisted state in the database. Please load the config from '
+                        'file and check your environment variables.')
+            log.warning('Trying to initialize state from config file.')
+            try:
+                state = load_ohlcv_config_from_file()
+                postgres_client.set_ccxt_ohlcv_fetcher_state(json.dumps(state))
+            except FileNotFoundError as e:
+                log.warning('There is no ohlcv config file provided.')
+                raise NoStateProvidedError(
+                    'You have neither provided a database ohlcv state nor a ohlcv config file. '
+                    'Check your environment variables -- Exiting.')
+    else:
+        state = load_ohlcv_config_from_file()
+        postgres_client.set_ccxt_ohlcv_fetcher_state(json.dumps(state))
 
     def get_exchanges(self):
         return self.state['config'].keys()
@@ -24,9 +51,6 @@ class StateService(Singleton):
 
     def get_timeframes(self, exchange, symbol):
         return self.state['config'][exchange][symbol]
-
-    def get_config(self):
-        return self.state['config']
 
     def has_new_config(self):
         return self.state['has_new_config']
@@ -57,7 +81,8 @@ class StateService(Singleton):
                     config[exchange] = {symbol: timeframes}
                     log.info(
                         '--> CMD <-- Added {} to {} with {}'.format(symbol, exchange, timeframes))
-        self.set_new_config_flag(True)
+        self.persist_state()
+        self.set_has_new_config_flag(True)
 
     def remove_descriptor(self, descriptor):
         config = self.state['config']
@@ -73,7 +98,8 @@ class StateService(Singleton):
                 del config[exchange]
                 self.add_exchange_to_close(exchange)
                 log.info('--> CMD <-- Removed {}'.format(exchange))
-        self.set_new_config_flag(True)
+        self.persist_state()
+        self.set_has_new_config_flag(True)
 
     def add_exchange_to_close(self, exchange):
         self.state['exchanges_to_close'].append(exchange)
@@ -83,3 +109,10 @@ class StateService(Singleton):
 
     def clear_exchanges_to_close(self):
         self.state['exchanges_to_close'] = []
+
+    def persist_state(self):
+        state = json.dumps(self.state)
+        self.postgres_client.set_ccxt_ohlcv_fetcher_state(state)
+
+    def load_persisted_state(self):
+        return self.postgres_client.get_ccxt_ohlcv_fetcher_state()

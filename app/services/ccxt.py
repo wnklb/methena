@@ -4,7 +4,6 @@ import logging
 import ccxt.async_support as ccxt
 
 from clients.postgres_client import PostgresClient
-from config import SCHEMA
 from services.state import StateService
 from utils.singleton import Singleton
 
@@ -112,7 +111,7 @@ class CCXTService(Singleton):
             self.exchanges[exchange_id] = exchange
             logger.info('Successfully loaded markets for {} and added them.'.format(exchange_id))
 
-            self.postgres_client.create_table_if_not_exists(SCHEMA, exchange_id)
+            self.postgres_client.create_exchange_ohlcv_table_if_not_exists(exchange_id)
         except Exception as e:  # TODO: find out the correct exception.
             logger.error('Unable to load markets for exchange {}.'.format(exchange_id))
             logger.error(e)
