@@ -114,7 +114,7 @@ class CCXTService(Singleton):
 
             self.postgres_client.create_table_if_not_exists(SCHEMA, exchange_id)
         except Exception as e:  # TODO: find out the correct exception.
-            logger.info('Unable to load markets for exchange {}.'.format(exchange_id))
+            logger.error('Unable to load markets for exchange {}.'.format(exchange_id))
             logger.error(e)
 
     @staticmethod
