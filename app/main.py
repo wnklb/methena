@@ -1,12 +1,15 @@
-import asyncio
+# flake8: noqa E402
 import logging
-import sys
 
-from services import OHLCVFetcher
 from utils.log.logging import init_logging_config
 
 init_logging_config()
 log = logging.getLogger(__name__)  # noqa F841
+
+import asyncio
+import sys
+
+from services import OHLCVFetcher
 
 
 async def main():
