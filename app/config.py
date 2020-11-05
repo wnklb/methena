@@ -7,12 +7,16 @@ def get_list(key, default=None):
 
 
 def get_int(key, default):
-    data = int(getenv(key, default))
-    return data
+    return int(getenv(key, default))
+
+
+def get_bool(key, default):
+    return bool(getenv(key, default))
 
 
 PSQL_DSN = getenv('PSQL_DSN')
 
+OHLCV_DB_STATE = get_bool('OHLCV_DB_STATE', 'False')
 OHLCV_CONFIG_FILE = getenv('OHLCV_CONFIG_FILE', 'ohlcv_config.json')
 
 SCHEMA = getenv('SCHEMA')
