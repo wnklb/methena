@@ -1,5 +1,7 @@
 # flake8: noqa E402
+import asyncio
 import logging
+import sys
 
 from error import NoStateProvidedError
 from utils.log.logging import init_logging_config
@@ -7,8 +9,6 @@ from utils.log.logging import init_logging_config
 init_logging_config()
 log = logging.getLogger(__name__)  # noqa F841
 
-import asyncio
-import sys
 
 try:
     from services import OHLCVFetcher

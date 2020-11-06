@@ -32,11 +32,13 @@ class StateService(Singleton):
             log.warning('There is no persisted state in the database. Please load the config from '
                         'file and check your environment variables.')
             log.warning('Trying to initialize state from config file.')
+            log.warning(e)
             try:
                 state = load_ohlcv_config_from_file()
                 postgres_client.set_ccxt_ohlcv_fetcher_state(json.dumps(state))
             except FileNotFoundError as e:
                 log.warning('There is no ohlcv config file provided.')
+                log.warning(e)
                 raise NoStateProvidedError(
                     'You have neither provided a database ohlcv state nor a ohlcv config file. '
                     'Check your environment variables -- Exiting.')
