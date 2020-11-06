@@ -60,6 +60,7 @@ class StateService(Singleton):
         self.state['has_new_config'] = state
 
     def add_descriptor(self, descriptor):
+        log.info('State :: Adding descriptor {}'.format(descriptor))
         config = self.state['config']
         for exchange, symbols in descriptor.items():
             if exchange in config:
@@ -67,53 +68,59 @@ class StateService(Singleton):
                     if symbol in config[exchange]:
                         unique_new = list(set(timeframes) - set(config[exchange][symbol]))
                         if len(unique_new) == 0:
-                            log.info('--> CMD <-- {} already set on {}.{}'.format(
+                            log.info('State :: {} already set on {}.{}'.format(
                                 timeframes, exchange, symbol))
                             continue
                         config[exchange][symbol] = unique_new + config[exchange][symbol]
                         log.info(
-                            '--> CMD <-- Added {} to {}.{}'.format(unique_new, exchange, symbol))
+                            'State :: Added {} to {}.{}'.format(unique_new, exchange, symbol))
                     else:
                         config[exchange][symbol] = timeframes
                         log.info(
-                            '--> CMD <-- Added {} to {}.{}'.format(timeframes, exchange, symbol))
+                            'State :: Added {} to {}.{}'.format(timeframes, exchange, symbol))
             else:
                 for symbol, timeframes in symbols.items():
                     config[exchange] = {symbol: timeframes}
                     log.info(
-                        '--> CMD <-- Added {} to {} with {}'.format(symbol, exchange, timeframes))
+                        'State :: Added {} to {} with {}'.format(symbol, exchange, timeframes))
         self.persist_state()
         self.set_has_new_config_flag(True)
 
     def remove_descriptor(self, descriptor):
+        log.info('Removing descriptor {}'.format(descriptor))
         config = self.state['config']
         for exchange, symbols in descriptor.items():
             for symbol, timeframes in symbols.items():
                 for timeframe in timeframes:
                     config[exchange][symbol].remove(timeframe)
-                    log.info('--> CMD <-- Removed {}.{}.{}'.format(exchange, symbol, timeframe))
+                    log.info('State :: Removed {}.{}.{}'.format(exchange, symbol, timeframe))
                 if len(config[exchange][symbol]) == 0:
                     del config[exchange][symbol]
-                    log.info('--> CMD <-- Removed {}.{}'.format(exchange, symbol))
+                    log.info('State :: Removed {}.{}'.format(exchange, symbol))
             if len(config[exchange]) == 0:
                 del config[exchange]
                 self.add_exchange_to_close(exchange)
-                log.info('--> CMD <-- Removed {}'.format(exchange))
+                log.info('State :: Removed {}'.format(exchange))
         self.persist_state()
         self.set_has_new_config_flag(True)
 
     def add_exchange_to_close(self, exchange):
+        log.debug('Set exchange {} to be closed'.format(exchange))
         self.state['exchanges_to_close'].append(exchange)
 
     def get_exchanges_to_close(self):
         return self.state['exchanges_to_close']
 
     def clear_exchanges_to_close(self):
+        log.debug('Cleared exchanges to be closed')
         self.state['exchanges_to_close'] = []
 
     def persist_state(self):
         state = json.dumps(self.state)
         self.postgres_client.set_ccxt_ohlcv_fetcher_state(state)
+        log.info('Persisted state to postgres')
 
     def load_persisted_state(self):
-        return self.postgres_client.get_ccxt_ohlcv_fetcher_state()
+        state = self.postgres_client.get_ccxt_ohlcv_fetcher_state()
+        log.info('Loaded state from postgres')
+        return state
