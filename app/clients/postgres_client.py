@@ -21,22 +21,24 @@ class PostgresClient(Singleton):
             self.start()
         if not self.setup_done:
             self.setup()
+        log.debug('Initialized PostgresClient')
 
     def start(self):
         self.conn = psycopg2.connect(dsn=PSQL_DSN)
         self.cur = self.conn.cursor()
-        log.info('Postgres connected to {}'.format(PSQL_DSN.split('@')[1]))
+        log.info('PostgresClient connected to {}'.format(PSQL_DSN.split('@')[1]))
         return self
 
     def stop(self):
         self.conn.close()
+        log.info('PostgresClient closed connection to {}'.format(PSQL_DSN.split('@')[1]))
 
     def setup(self):
         self.create_schema_if_not_exist(SCHEMA_CCXT_OHLCV)
         self.create_schema_if_not_exist(SCHEMA_METHENA)
         self.create_table_ccxt_ohlcv_fetcher_state_if_not_exists()
         self.setup_done = True
-        log.info('Postgres setup done - initial schemas and tables created.')
+        log.info('PostgresClient setup done - initial schemas and tables created.')
 
     def __execute(self, query, values=None):
         self.cur.execute(query, values)
@@ -52,6 +54,7 @@ class PostgresClient(Singleton):
         # TODO: get state and log dependingly
         query = """CREATE SCHEMA IF NOT EXISTS {schema};""".format(schema=schema)
         self.__execute_and_commit(query)
+        # TODO: how do we know that a schema has been created?
 
     def create_table_ccxt_ohlcv_fetcher_state_if_not_exists(self):
         # TODO: get state and log dependingly
