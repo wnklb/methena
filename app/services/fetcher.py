@@ -17,22 +17,26 @@ class OHLCVFetcher:
     ccxt_service = CCXTService()
     state_service = StateService()
     mqtt_client = None
+    cycles = 0
     log.debug('Created OHLCVFetcher')
 
     def __init__(self):
         self.loop = asyncio.get_running_loop()
         if self.mqtt_client is None:
             OHLCVFetcher.mqtt_client = MqttClient(loop=self.loop)
+        log.debug('Initialized OHLCVFetcher')
 
     async def __aenter__(self):
         self.mqtt_client.start()
         await self.ccxt_service.init_exchange_markets()
+        log.debug('Entered OHLCVFetcher')
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.mqtt_client.stop()
         self.postgres_client.stop()
         await self.ccxt_service.close()
+        log.debug('Exited OHLCVFetcher')
 
     async def main(self):
         while True:
@@ -44,11 +48,14 @@ class OHLCVFetcher:
 
     async def __fetch(self):
         # Fetch OHLCV data asynchronously for each exchange.
+        self.cycles += 1
+        log.debug('Fetching in {} cycle'.format(self.cycles))
         exchanges = self.ccxt_service.get_loaded_exchanges()
         tasks = [self.__process_exchange(exchange) for exchange in exchanges]
         await asyncio.gather(*tasks)
 
     async def __process_exchange(self, exchange):
+        log.info('Started fetching {}'.format(exchange.id))
         try:
             if exchange.has['fetchOHLCV']:
                 symbols_state = self.state_service.get_symbols(exchange.id)
@@ -75,6 +82,7 @@ class OHLCVFetcher:
             log.error(e)
 
     async def __process_symbol(self, exchange, symbol):
+        log.info('Started fetching {}.{}'.format(exchange.id, symbol))
         timeframes = self.state_service.get_timeframes(exchange.id, symbol)
         if not timeframes:  # If the config holds an empty list, take all timeframes available
             timeframes = exchange.timeframes
@@ -90,7 +98,7 @@ class OHLCVFetcher:
                 log.error(e)
 
     async def __process_timeseries(self, exchange, symbol, timeframe):
-        log.info('[{}] [{}] [{}] - Attempting to fetch OHLCV timeseries'.format(
+        log.info('[{}] [{}] [{}] - Fetching OHLCV timeseries'.format(
             exchange.id, symbol, timeframe))
         since = self.__get_since_timestamp(exchange, symbol, timeframe)
         count = 0
@@ -123,7 +131,7 @@ class OHLCVFetcher:
                 exchange.id, symbol, timeframe))
 
         duration = time() - start_time
-        log.info('[{}] [{}] [{}] - Completed and fetched {} entries for taking {:.2f}s.'.format(
+        log.info('[{}] [{}] [{}] - Completed and fetched {} entries taking {:.2f}s.'.format(
             exchange.id, symbol, timeframe, count, duration))
 
     def __get_since_timestamp(self, exchange, symbol, timeframe):
@@ -131,7 +139,7 @@ class OHLCVFetcher:
         try:
             since = self.postgres_client.fetch_latest_timestamp(exchange.id, symbol, timeframe)
         except Exception as e:
-            log.info('[{}] [{}] [{}] - No latest timestamp available.'.format(
+            log.info('[{}] [{}] [{}] - No previous timestamp available. Fetching from start'.format(
                 exchange.id, symbol, timeframe))
             log.info(e)
 
