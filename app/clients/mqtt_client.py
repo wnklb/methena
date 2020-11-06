@@ -17,6 +17,7 @@ class MqttClient(Singleton):
     parser = MQTTParser()
     ccxt_service = CCXTService()
     state_service = StateService()
+    log.debug('Create MqttClient')
 
     def __init__(self, loop):
         if self.client is None:
@@ -29,11 +30,11 @@ class MqttClient(Singleton):
             self.client.on_subscribe = self.__on_subscribe
             self.client.on_unsubscribe = self.__on_unsubscribe
         self.loop = loop
+        log.debug('Initialized MqttClient')
 
     def start(self):
         try:
             self.client.connect(MQTT_HOST, MQTT_PORT)
-            log.info('MQTT connected')
         except Exception as e:
             raise ConnectionError('Unable to connect to mqtt broker at {}:{}. Error: {}'.format(
                 MQTT_HOST, MQTT_PORT, e))
@@ -43,7 +44,9 @@ class MqttClient(Singleton):
 
     def stop(self):
         self.client.loop_stop()
+        log.info('MQTT loop stopped')
         self.client.disconnect()
+        log.info('MQTT client disconnected from {}:{}'.format(MQTT_HOST, MQTT_PORT))
 
     def subscribe(self, topic, qos=0):
         pass
@@ -57,9 +60,11 @@ class MqttClient(Singleton):
     # The callback for when the client receives a CONNACK response from the server.
     def __on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            log.info('Successfully connected to broker. {}'.format(mqtt.connack_string(rc)))
+            log.info('MQTT client successfully connected to broker at {}:{}'.format(MQTT_HOST,
+                                                                                    MQTT_PORT))
         else:
-            log.warning('Error connecting to broker: {}'.format(mqtt.connack_string(rc)))
+            log.warning('MQTT failed connecting to broker at {}:{}'.format(MQTT_HOST, MQTT_PORT))
+            # TODO: raise exception that we were unable to connect
 
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
@@ -98,7 +103,7 @@ class MqttClient(Singleton):
     # The callback for when a PUBLISH message is received from the server.
     def __on_disconnect(self, client, userdata, rc):
         if rc != 0:
-            log.warning('Unexpected disconnection.')
+            log.warning('MQTT disconnected unexpectedly from {}:{}.'.format(MQTT_HOST, MQTT_PORT))
 
     def __on_message(self, client, userdata, msg):
         log.debug(msg.topic + ' ' + str(msg.payload))
