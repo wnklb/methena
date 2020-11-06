@@ -7,6 +7,7 @@ log = logging.getLogger()
 
 
 class FilesystemClient:
+    log.debug('Created FilesystemClient')
 
     @staticmethod
     def save_ohlcv_config(config, file=OHLCV_CONFIG_FILE):

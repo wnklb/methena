@@ -22,6 +22,7 @@ def load_ohlcv_config_from_file():
 
 class StateService(Singleton):
     postgres_client = PostgresClient()
+    log.debug('Created StateService')
 
     if OHLCV_DB_STATE:
         try:

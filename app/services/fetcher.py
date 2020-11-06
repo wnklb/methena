@@ -17,6 +17,7 @@ class OHLCVFetcher:
     ccxt_service = CCXTService()
     state_service = StateService()
     mqtt_client = None
+    log.debug('Created OHLCVFetcher')
 
     def __init__(self):
         self.loop = asyncio.get_running_loop()

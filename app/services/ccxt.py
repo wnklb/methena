@@ -14,6 +14,7 @@ class CCXTService(Singleton):
     exchanges = {}
     postgres_client = PostgresClient()
     state_service = StateService()
+    log.debug('Created CCXTService')
 
     async def close(self, exchanges=None):
         if exchanges is None:
