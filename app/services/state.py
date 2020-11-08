@@ -4,7 +4,7 @@ import logging
 from clients.filesystem_client import FilesystemClient
 from clients.postgres_client import PostgresClient
 from config import OHLCV_DB_STATE
-from error import NoStateProvidedError
+from errors import NoStateProvidedError
 from utils.singleton import Singleton
 
 log = logging.getLogger()

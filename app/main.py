@@ -3,7 +3,7 @@ import asyncio
 import logging
 import sys
 
-from error import NoStateProvidedError
+from errors import NoStateProvidedError
 from utils.log.logging import init_logging_config
 
 init_logging_config()
