@@ -4,7 +4,7 @@ from time import time
 
 from clients.mqtt_client import MqttClient
 from clients.postgres_client import PostgresClient
-from error import FetchError
+from error import FetchError, AsyncioError
 from services.ccxt import CCXTService
 from services.state import StateService
 from utils.postgres import prepare_data_for_postgres
@@ -35,13 +35,20 @@ class OHLCVFetcher:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.mqtt_client.stop()
         self.postgres_client.stop()
-        await self.ccxt_service.close()
+        try:
+            await self.ccxt_service.close()
+        except RuntimeError as e:
+            log.warning('Handled runtime error caught during exchange closing: {}'.format(e))
         log.debug('Exited OHLCVFetcher')
 
     async def main(self):
-        while True:
+        ok = True
+        while ok:
             self.state_service.set_has_new_config_flag(False)
-            await self.__fetch()
+            try:
+                await self.__fetch()
+            except AsyncioError:
+                ok = False
             exchanges_to_close = self.state_service.get_exchanges_to_close()
             await self.ccxt_service.close(exchanges_to_close)
             self.state_service.clear_exchanges_to_close()
@@ -49,10 +56,17 @@ class OHLCVFetcher:
     async def __fetch(self):
         # Fetch OHLCV data asynchronously for each exchange.
         self.cycles += 1
-        log.debug('Fetching in {} cycle'.format(self.cycles))
+        log.info('')
+        log.info('============================================================================')
+        log.info('')
+        log.info('Fetch in cycle: {}'.format(self.cycles))
         exchanges = self.ccxt_service.get_loaded_exchanges()
         tasks = [self.__process_exchange(exchange) for exchange in exchanges]
-        await asyncio.gather(*tasks)
+        try:
+            await asyncio.gather(*tasks)
+        except asyncio.exceptions.CancelledError as e:
+            log.warning('Caught asyncio.exceptions.CancelledError. Shutting down. ({})'.format(e))
+            raise AsyncioError()
 
     async def __process_exchange(self, exchange):
         log.info('Started fetching {}'.format(exchange.id))
@@ -166,7 +180,7 @@ class OHLCVFetcher:
 
                 next_attempt_sec = 20 * (attempt + 1)
                 log.warning(
-                    '[{}] [{}] [{}] - {} attempt to get OHLCV data since {}  was unsuccessful. '
+                    '[{}] [{}] [{}] - {} attempt to get OHLCV data since {} was unsuccessful. '
                     'Retrying in {} seconds'.format(attempt, exchange, symbol, timeframe, since,
                                                     next_attempt_sec))
                 log.warning(e)

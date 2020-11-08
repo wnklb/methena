@@ -18,23 +18,24 @@ class CCXTService(Singleton):
 
     async def close(self, exchanges=None):
         if exchanges is None:
-            exchanges = self.exchanges.items()
+            exchanges = self.exchanges
         else:
             exchanges = {exchange: self.exchanges[exchange] for exchange in exchanges}
         for exchange_id, exchange in exchanges.items():
             try:
                 log.debug('Trying to close exchange: {}'.format(exchange_id))
-                await exchange.close()
+                asyncio.ensure_future(exchange.close())
                 log.info('Successfully closed exchange: {}'.format(exchange_id))
             except Exception as e:
                 log.error('Error during closing of exchange!')
                 log.error(e)
+        for exchange_id in exchanges.keys():
             del self.exchanges[exchange_id]
 
     async def init_exchange_markets(self, exchange_ids=None):
-        log.info('Initializing exchanges {}'.format(exchange_ids))
         if exchange_ids is None:
             exchange_ids = self.state_service.get_exchanges()
+        log.info('Initializing exchanges {}'.format(list(exchange_ids)))
         tasks = [self.__init_exchange_market(exchange_id) for exchange_id in exchange_ids]
         return await asyncio.gather(*tasks)
 

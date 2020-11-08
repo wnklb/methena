@@ -4,3 +4,7 @@ class FetchError(Exception):
 
 class NoStateProvidedError(Exception):
     pass
+
+
+class AsyncioError(Exception):
+    pass

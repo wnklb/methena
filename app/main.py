@@ -26,5 +26,6 @@ if __name__ == '__main__':
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print('Exit 0 via Keyboard Interrupt')
+        log.info('Exit 0 via Keyboard Interrupt')
+    finally:
         sys.exit(0)
