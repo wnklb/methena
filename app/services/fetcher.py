@@ -4,7 +4,7 @@ from time import time
 
 from clients.mqtt_client import MqttClient
 from clients.postgres_client import PostgresClient
-from errors import FetchError, AsyncioError
+from errors import AsyncioError, FetchError
 from services.ccxt import CCXTService
 from services.state import StateService
 from utils.postgres import prepare_data_for_postgres
@@ -140,7 +140,7 @@ class OHLCVFetcher:
             values = prepare_data_for_postgres(symbol, timeframe, ohlcv_data)
             # For now, we don't care why/that this fails und just pop it.
             # TODO: handling of psql error should be implemented later.
-            self.postgres_client.insert_many(values, exchange.id)
+            self.postgres_client.insert_ohlcv_entries(values, exchange.id)
             log.debug('[{}] [{}] [{}] - Successfully inserted OHLCV chunk.'.format(
                 exchange.id, symbol, timeframe))
 

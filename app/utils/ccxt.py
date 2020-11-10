@@ -1,0 +1,23 @@
+def parse_exchange_to_json(exchange):
+    return {
+        'commonCurrencies': exchange.commonCurrencies,
+        'countries': exchange.countries,
+        'currencies': exchange.currencies,
+        'fees': exchange.fees,
+        'has': exchange.has,
+        'id': exchange.id,
+        'limits': exchange.limits,
+        'markets': exchange.markets,
+        'name': exchange.name,
+        'options': exchange.options,
+        'enableRateLimit': exchange.enableRateLimit,
+        'rateLimit': exchange.rateLimit,
+        'requiredCredentials': exchange.requiredCredentials,
+        'symbols': exchange.symbols,
+        'timeframes': exchange.timeframes,
+        'timeout': exchange.timeout,
+        'urls': exchange.urls,
+        'userAgent': exchange.userAgent,
+        'version': exchange.version,
+        'api': exchange.api
+    }

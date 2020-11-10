@@ -25,3 +25,13 @@ SCHEMA_METHENA = getenv('SCHEMA_METHENA')
 MQTT_HOST = getenv('MQTT_HOST')
 MQTT_PORT = get_int('MQTT_PORT', '1883')
 MQTT_TOPIC_CCXT_OHLCV = getenv('MQTT_TOPIC_CCXT_OHLCV', 'ccxt/ohlcv/#')
+
+APP_HOST = getenv('APP_HOST')
+APP_PORT = getenv('APP_PORT')
+
+DEBUG = get_bool('DEBUG', 'True')
+AUTORELOAD = get_bool('AUTORELOAD', 'True')
+COMPRESS_RESPONSE = get_bool('COMPRESS_RESPONSE', 'True')
+SERVE_TRACEBACK = get_bool('SERVE_TRACEBACK', 'True')
+
+CORS_ORIGIN = getenv('CORS_ORIGIN')
