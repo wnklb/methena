@@ -1,3 +1,5 @@
+import logging
+
 import tornado.ioloop
 import tornado.locks
 import tornado.web
@@ -9,6 +11,8 @@ from handlers import (CCXTExchangeBasesHandler, CCXTExchangeHandler, CCXTExchang
                       CCXTExchangesHandler, CCXTExchangeSymbolsHandler, MethenaExchangesHandler,
                       MethenaOHLCVStatusHandler)
 from services import CCXTService, PostgresClient
+
+log = logging.getLogger()
 
 define("port", default=APP_PORT, help="run on the given port", type=int)
 
@@ -51,12 +55,14 @@ async def main():
     # Create the global connection pool.
     app = Application()
     app.listen(options.port)
+    log.info('Tornado started at port {}  -  Debug: {}  -  Autoreload: {}'.format(APP_PORT, DEBUG,
+                                                                                  AUTORELOAD))
 
     # In this demo the server will simply run until interrupted
     # with Ctrl-C, but if you want to shut down more gracefully,
     # call shutdown_event.set().
-    shutdown_event = tornado.locks.Event()
-    await shutdown_event.wait()
+    # shutdown_event = tornado.locks.Event()
+    # await shutdown_event.wait()
 
 
 if __name__ == "__main__":

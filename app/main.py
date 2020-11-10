@@ -3,6 +3,7 @@ import asyncio
 import logging
 import sys
 
+import tornado_app
 from errors import NoStateProvidedError
 from utils.log.logging import init_logging_config
 
@@ -18,6 +19,7 @@ except NoStateProvidedError as e:
 
 
 async def main():
+    await tornado_app.main()
     async with OHLCVFetcher() as ohlcv_fetcher:
         await ohlcv_fetcher.main()
 
