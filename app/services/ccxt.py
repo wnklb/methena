@@ -7,7 +7,7 @@ from clients.postgres_client import PostgresClient
 from services.state import StateService
 from utils.singleton import Singleton
 
-log = logging.getLogger()
+log = logging.getLogger('methena')
 
 
 class CCXTService(Singleton):
@@ -38,19 +38,6 @@ class CCXTService(Singleton):
         log.info('Initializing exchanges {}'.format(list(exchange_ids)))
         tasks = [self.__init_exchange_market(exchange_id) for exchange_id in exchange_ids]
         return await asyncio.gather(*tasks)
-
-    def build_descriptor(self, raw_descriptor):
-        log.debug('Building descriptor from {}'.format(raw_descriptor))
-        exchanges, symbols, timeframes = raw_descriptor
-
-        descriptor = {
-            exchange: {
-                symbol: self.__get_timeframe_level(exchange, timeframes)
-                for symbol in self.__get_symbol_level(exchange, symbols)
-            } for exchange in self.__get_exchange_level(exchanges)
-        }
-        log.debug('Created descriptor {}'.format(descriptor))
-        return descriptor
 
     async def get_exchange(self, exchange_id):
         if exchange_id not in self.exchanges:

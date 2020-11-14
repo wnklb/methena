@@ -3,7 +3,7 @@ import logging
 
 from config import OHLCV_CONFIG_FILE
 
-log = logging.getLogger()
+log = logging.getLogger('methena')
 
 
 class FilesystemClient:

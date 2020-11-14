@@ -8,7 +8,7 @@ from sql.ddl import create_table_ccxt_ohlcv_status
 from utils.postgres import convert_datetime_to_timestamp
 from utils.singleton import Singleton
 
-log = logging.getLogger()
+log = logging.getLogger('methena')
 
 
 class PostgresClient(Singleton):

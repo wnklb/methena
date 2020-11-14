@@ -12,7 +12,7 @@ from handlers import (CCXTExchangeBasesHandler, CCXTExchangeHandler, CCXTExchang
                       MethenaOHLCVStatusHandler)
 from services import CCXTService, PostgresClient
 
-log = logging.getLogger()
+log = logging.getLogger('methena')
 
 define("port", default=APP_PORT, help="run on the given port", type=int)
 

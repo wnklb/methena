@@ -9,7 +9,7 @@ from services.ccxt import CCXTService
 from services.state import StateService
 from utils.postgres import prepare_data_for_postgres
 
-log = logging.getLogger()
+log = logging.getLogger('methena')
 
 
 class OHLCVFetcher:

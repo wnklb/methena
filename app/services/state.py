@@ -7,7 +7,7 @@ from config import OHLCV_DB_STATE
 from errors import NoStateProvidedError
 from utils.singleton import Singleton
 
-log = logging.getLogger()
+log = logging.getLogger('methena')
 
 
 def load_ohlcv_config_from_file():

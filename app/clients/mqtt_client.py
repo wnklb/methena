@@ -9,7 +9,7 @@ from services import CCXTService, StateService
 from utils.mqtt_parser import MQTTParser
 from utils.singleton import Singleton
 
-log = logging.getLogger()
+log = logging.getLogger('methena')
 
 
 class MqttClient(Singleton):

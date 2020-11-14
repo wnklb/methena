@@ -3,13 +3,13 @@ import asyncio
 import logging
 import sys
 
-import tornado_app
-from errors import NoStateProvidedError
 from utils.log.logging import init_logging_config
 
 init_logging_config()
-log = logging.getLogger(__name__)  # noqa F841
+log = logging.getLogger('methena')  # noqa F841
 
+from errors import NoStateProvidedError
+import tornado_app
 
 try:
     from services import OHLCVFetcher
