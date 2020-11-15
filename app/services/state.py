@@ -29,6 +29,7 @@ class StateService(Singleton):
             state = postgres_client.get_ccxt_ohlcv_fetcher_state()
             log.info('StateService initialized state from database.')
         except TypeError as e:
+            log.warning('Error loading config from database', exc_info=e)
             log.warning('There is no persisted state in the database. Please load the config from '
                         'file and check your environment variables.')
             log.warning('Trying to initialize state from config file.')
@@ -62,7 +63,7 @@ class StateService(Singleton):
         self.state['has_new_config'] = state
 
     def add_descriptor(self, descriptor):
-        log.info('State :: Adding descriptor {}'.format(descriptor))
+        log.debug('State :: Adding descriptor {}'.format(descriptor))
         config = self.state['config']
         for exchange, symbols in descriptor.items():
             if exchange in config:
@@ -70,20 +71,20 @@ class StateService(Singleton):
                     if symbol in config[exchange]:
                         unique_new = list(set(timeframes) - set(config[exchange][symbol]))
                         if len(unique_new) == 0:
-                            log.info('State :: {} already set on {}.{}'.format(
+                            log.debug('State :: {} already set on {}.{}'.format(
                                 timeframes, exchange, symbol))
                             continue
                         config[exchange][symbol] = unique_new + config[exchange][symbol]
-                        log.info(
+                        log.debug(
                             'State :: Added {} to {}.{}'.format(unique_new, exchange, symbol))
                     else:
                         config[exchange][symbol] = timeframes
-                        log.info(
+                        log.debug(
                             'State :: Added {} to {}.{}'.format(timeframes, exchange, symbol))
             else:
                 for symbol, timeframes in symbols.items():
-                    config[exchange] = {symbol: timeframes}
-                    log.info(
+                    config[exchange][symbol] = timeframes
+                    log.debug(
                         'State :: Added {} to {} with {}'.format(symbol, exchange, timeframes))
         self.persist_state()
         self.set_has_new_config_flag(True)
@@ -94,15 +95,18 @@ class StateService(Singleton):
         for exchange, symbols in descriptor.items():
             for symbol, timeframes in symbols.items():
                 for timeframe in timeframes:
-                    config[exchange][symbol].remove(timeframe)
-                    log.info('State :: Removed {}.{}.{}'.format(exchange, symbol, timeframe))
+                    try:
+                        config[exchange][symbol].remove(timeframe)
+                        log.debug('State :: Removed {}.{}.{}'.format(exchange, symbol, timeframe))
+                    except (ValueError, KeyError):
+                        pass
                 if len(config[exchange][symbol]) == 0:
                     del config[exchange][symbol]
-                    log.info('State :: Removed {}.{}'.format(exchange, symbol))
+                    log.debug('State :: Removed {}.{}'.format(exchange, symbol))
             if len(config[exchange]) == 0:
                 del config[exchange]
                 self.add_exchange_to_close(exchange)
-                log.info('State :: Removed {}'.format(exchange))
+                log.debug('State :: Removed {}'.format(exchange))
         self.persist_state()
         self.set_has_new_config_flag(True)
 
