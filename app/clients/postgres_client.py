@@ -37,7 +37,7 @@ class PostgresClient(Singleton):
     def __setup(self):
         self.create_schema_if_not_exist(SCHEMA_CCXT_OHLCV)
         self.create_schema_if_not_exist(SCHEMA_METHENA)
-        self.create_table_ccxt_ohlcv_fetcher_state_if_not_exists()
+        self.create_table_ccxt_ohlcv_fetcher_config_if_not_exists()
         self.create_table_ccxt_ohlcv_status()
         self.setup_done = True
         log.info('PostgresClient setup done - initial schemas and tables created.')
@@ -58,12 +58,12 @@ class PostgresClient(Singleton):
         self.__execute_and_commit(query)
         # TODO: how do we know that a schema has been created?
 
-    def create_table_ccxt_ohlcv_fetcher_state_if_not_exists(self):
+    def create_table_ccxt_ohlcv_fetcher_config_if_not_exists(self):
         # TODO: get state and log dependingly
         query = """
         create table if not exists ccxt_ohlcv_fetcher_state
         (
-            state jsonb not null,
+            config jsonb not null,
             timestamp timestamp with time zone default CURRENT_TIMESTAMP not null,
             id integer not null
                 constraint ccxt_ohlcv_fetcher_state_pk
@@ -130,23 +130,24 @@ class PostgresClient(Singleton):
         timestamp = convert_datetime_to_timestamp(datetime_[0])
         return timestamp
 
-    def set_ccxt_ohlcv_fetcher_state(self, state):
+    def set_ccxt_ohlcv_fetcher_config(self, state):
         query = """
-        insert into methena.ccxt_ohlcv_fetcher_state (id, state, timestamp)
+        insert into methena.ccxt_ohlcv_fetcher_state (id, config, timestamp)
         values (1, %s, CURRENT_TIMESTAMP)
         ON CONFLICT (id)
         DO UPDATE
         SET
-            state = EXCLUDED.state,
+            config = EXCLUDED.config,
             timestamp = EXCLUDED.timestamp
         ;
         """
         self.insert(query, (state,))
 
-    def get_ccxt_ohlcv_fetcher_state(self):
+    def get_ccxt_ohlcv_fetcher_config(self):
         query = """
-        SELECT state
+        SELECT config
         FROM methena.ccxt_ohlcv_fetcher_state
         WHERE id = 1;
         """
-        return self.fetch_one(query)[0]
+        res = self.fetch_one(query)
+        return res[0]

@@ -3,49 +3,68 @@ import logging
 
 from clients.filesystem_client import FilesystemClient
 from clients.postgres_client import PostgresClient
-from config import OHLCV_DB_STATE
-from errors import NoStateProvidedError
+from config import OHLCV_DB_STATE, OHLCV_CONFIG_FILE
+from errors import DatabaseConfigNotFoundError, NoConfigProvidedError, ConfigFileNotFoundError
 from utils.singleton import Singleton
 
 log = logging.getLogger('methena')
 
 
-def load_ohlcv_config_from_file():
-    state = {
-        'config': FilesystemClient.load_ohlcv_config(),
+def load_state(source='db'):
+    config = {}
+    if source == 'db':
+        try:
+            config = __load_ohlcv_config_from_database()
+        except DatabaseConfigNotFoundError as e:
+            log.warning('Trying to initialize state from config file.')
+            try:
+                config = __load_ohlcv_config_from_file()
+            except ConfigFileNotFoundError as e:
+                raise NoConfigProvidedError(
+                    'You have neither provided a database ohlcv config nor a ohlcv config file. '
+                    'Check your environment variables.')
+    elif source == 'file':
+        config = __load_ohlcv_config_from_file()
+
+    return {
+        'config': config,
         'has_new_config': False,
-        'exchanges_to_close': []
+        'exchanges_to_close': set()
     }
-    log.info('StateService initialized state from config file.')
-    return state
+
+
+def __load_ohlcv_config_from_database():
+    try:
+        config = PostgresClient().get_ccxt_ohlcv_fetcher_config()
+        log.info('StateService initialized config from database.')
+        return config
+    except TypeError as e:
+        log.warning('Unable to load OHLCV config from database - No config is persisted. Please '
+                    'load the config from file and check your environment variables.')
+        raise DatabaseConfigNotFoundError()
+
+
+def __load_ohlcv_config_from_file():
+    try:
+        config = FilesystemClient.load_ohlcv_config()
+        log.info('StateService initialized config from OHLCV config file.')
+        PostgresClient().set_ccxt_ohlcv_fetcher_config(json.dumps(config))
+        log.info('Persisted config to postgres')
+        return config
+    except FileNotFoundError as e:
+        log.warning('There is no ohlcv config file provided.')
+        log.warning(e)
+        raise ConfigFileNotFoundError(
+            'Cannot access OHLCV config file at "{}"'.format(OHLCV_CONFIG_FILE))
 
 
 class StateService(Singleton):
     postgres_client = PostgresClient()
+    state = load_state() if OHLCV_DB_STATE else load_state('file')
     log.debug('Created StateService')
 
-    if OHLCV_DB_STATE:
-        try:
-            state = postgres_client.get_ccxt_ohlcv_fetcher_state()
-            log.info('StateService initialized state from database.')
-        except TypeError as e:
-            log.warning('Error loading config from database', exc_info=e)
-            log.warning('There is no persisted state in the database. Please load the config from '
-                        'file and check your environment variables.')
-            log.warning('Trying to initialize state from config file.')
-            log.warning(e)
-            try:
-                state = load_ohlcv_config_from_file()
-                postgres_client.set_ccxt_ohlcv_fetcher_state(json.dumps(state))
-            except FileNotFoundError as e:
-                log.warning('There is no ohlcv config file provided.')
-                log.warning(e)
-                raise NoStateProvidedError(
-                    'You have neither provided a database ohlcv state nor a ohlcv config file. '
-                    'Check your environment variables -- Exiting.')
-    else:
-        state = load_ohlcv_config_from_file()
-        postgres_client.set_ccxt_ohlcv_fetcher_state(json.dumps(state))
+    def get_state(self):
+        return self.state
 
     def get_exchanges(self):
         return self.state['config'].keys()
@@ -82,11 +101,12 @@ class StateService(Singleton):
                         log.debug(
                             'State :: Added {} to {}.{}'.format(timeframes, exchange, symbol))
             else:
+                config[exchange] = {}
                 for symbol, timeframes in symbols.items():
                     config[exchange][symbol] = timeframes
                     log.debug(
                         'State :: Added {} to {} with {}'.format(symbol, exchange, timeframes))
-        self.persist_state()
+        self.persist_config()
         self.set_has_new_config_flag(True)
 
     def remove_descriptor(self, descriptor):
@@ -107,26 +127,20 @@ class StateService(Singleton):
                 del config[exchange]
                 self.add_exchange_to_close(exchange)
                 log.debug('State :: Removed {}'.format(exchange))
-        self.persist_state()
+        self.persist_config()
         self.set_has_new_config_flag(True)
 
     def add_exchange_to_close(self, exchange):
         log.debug('Set exchange {} to be closed'.format(exchange))
-        self.state['exchanges_to_close'].append(exchange)
+        self.state['exchanges_to_close'].add(exchange)
 
     def get_exchanges_to_close(self):
         return self.state['exchanges_to_close']
 
     def clear_exchanges_to_close(self):
         log.debug('Cleared exchanges to be closed')
-        self.state['exchanges_to_close'] = []
+        self.state['exchanges_to_close'].clear()
 
-    def persist_state(self):
-        state = json.dumps(self.state)
-        self.postgres_client.set_ccxt_ohlcv_fetcher_state(state)
-        log.info('Persisted state to postgres')
-
-    def load_persisted_state(self):
-        state = self.postgres_client.get_ccxt_ohlcv_fetcher_state()
-        log.info('Loaded state from postgres')
-        return state
+    def persist_config(self):
+        self.postgres_client.set_ccxt_ohlcv_fetcher_config(json.dumps(self.state['config']))
+        log.info('Persisted config to postgres')

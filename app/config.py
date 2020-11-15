@@ -1,5 +1,7 @@
 from os import getenv
 
+from errors import EnvVariableWronglySetError
+
 
 def get_list(key, default=None):
     data = getenv(key, default)
@@ -11,13 +13,21 @@ def get_int(key, default):
 
 
 def get_bool(key, default):
-    return bool(getenv(key, default))
+    value = getenv(key, default)
+    if value == 'True':
+        return True
+    elif value == 'False':
+        return False
+    else:
+        raise EnvVariableWronglySetError(
+            'Env variable {} is no boolean but "{}"'.format(key, value))
 
 
 PSQL_DSN = getenv('PSQL_DSN')
 
 OHLCV_DB_STATE = get_bool('OHLCV_DB_STATE', 'False')
-OHLCV_CONFIG_FILE = getenv('OHLCV_CONFIG_FILE', 'ohlcv_config.json')
+print(OHLCV_DB_STATE)
+OHLCV_CONFIG_FILE = getenv('OHLCV_CONFIG_FILE', 'ohlcv_configa.json')
 
 SCHEMA_CCXT_OHLCV = getenv('SCHEMA_CCXT_OHLCV')
 SCHEMA_METHENA = getenv('SCHEMA_METHENA')
