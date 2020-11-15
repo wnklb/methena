@@ -3,12 +3,12 @@ import asyncio
 import logging
 import sys
 
-from error import NoStateProvidedError
+import tornado_app
+from errors import NoStateProvidedError
 from utils.log.logging import init_logging_config
 
 init_logging_config()
-log = logging.getLogger(__name__)  # noqa F841
-
+log = logging.getLogger('methena')  # noqa F841
 
 try:
     from services import OHLCVFetcher
@@ -18,6 +18,7 @@ except NoStateProvidedError as e:
 
 
 async def main():
+    await tornado_app.main()
     async with OHLCVFetcher() as ohlcv_fetcher:
         await ohlcv_fetcher.main()
 

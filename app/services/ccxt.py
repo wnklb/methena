@@ -7,7 +7,7 @@ from clients.postgres_client import PostgresClient
 from services.state import StateService
 from utils.singleton import Singleton
 
-log = logging.getLogger()
+log = logging.getLogger('methena')
 
 
 class CCXTService(Singleton):
@@ -38,19 +38,6 @@ class CCXTService(Singleton):
         log.info('Initializing exchanges {}'.format(list(exchange_ids)))
         tasks = [self.__init_exchange_market(exchange_id) for exchange_id in exchange_ids]
         return await asyncio.gather(*tasks)
-
-    def build_descriptor(self, raw_descriptor):
-        log.debug('Building descriptor from {}'.format(raw_descriptor))
-        exchanges, symbols, timeframes = raw_descriptor
-
-        descriptor = {
-            exchange: {
-                symbol: self.__get_timeframe_level(exchange, timeframes)
-                for symbol in self.__get_symbol_level(exchange, symbols)
-            } for exchange in self.__get_exchange_level(exchanges)
-        }
-        log.debug('Created descriptor {}'.format(descriptor))
-        return descriptor
 
     async def get_exchange(self, exchange_id):
         if exchange_id not in self.exchanges:
@@ -92,6 +79,20 @@ class CCXTService(Singleton):
     def get_loaded_exchanges(self):
         return self.exchanges.values()
 
+    def build_descriptor(self, raw_descriptor):
+        log.debug('Building descriptor from {}'.format(raw_descriptor))
+        exchanges, symbols, timeframes = raw_descriptor
+
+        descriptor = {
+            exchange: {
+                symbol: self.__get_timeframe_level(exchange, timeframes)
+                for symbol in self.__get_symbol_level(exchange, symbols)
+            } for exchange in self.__get_exchange_level(exchanges)
+        }
+        log.debug('Created descriptor {}'.format(descriptor))
+
+        return descriptor
+
     def validate_descriptor(self, descriptor):
         log.debug('Validating descriptor {}'.format(descriptor))
         descriptor_validated = {exchange: {} for exchange in descriptor.keys()}
@@ -110,11 +111,12 @@ class CCXTService(Singleton):
                                     'available at the exchange'.format(exchange, symbol, timeframe))
         return descriptor_validated
 
-    @staticmethod
-    def __get_exchange_level(exchanges):
+    def __get_exchange_level(self, exchanges):
         if '*' == exchanges:
             return ccxt.exchanges
-        return exchanges
+
+        # Only return exchanges that have been initialized before
+        return [exchange for exchange in exchanges if exchange in self.exchanges]
 
     def __get_symbol_level(self, exchange, symbols):
         if '*' == symbols:
@@ -138,6 +140,7 @@ class CCXTService(Singleton):
 
             self.postgres_client.create_exchange_ohlcv_table_if_not_exists(exchange_id)
         except Exception as e:  # TODO: find out the correct exception.
+            # TODO: #2 what to do if market init is unsuccessful?
             log.error('Unable to load markets for exchange {}.'.format(exchange_id))
             log.error(e)
 

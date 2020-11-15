@@ -3,7 +3,7 @@
   "disable_existing_loggers": false,
   "formatters": {
     "simple": {
-      "format": "%(asctime)s [%(filename)s - %(lineno)3d] %(levelname)s: %(message)s",
+      "format": "%(asctime)s %(levelname)7s [%(filename)10s - %(lineno)3d] %(message)s",
       "datefmt": "%H:%M:%S"
     },
     "not-used-yet": {
@@ -12,9 +12,13 @@
     }
   },
   "filters": {
-    "max-level-filter": {
+    "max-level-filter-info": {
       "()": "app.utils.log.logging.MaxLevelFilter",
       "level": 20
+    },
+    "max-level-filter-debug": {
+      "()": "app.utils.log.logging.MaxLevelFilter",
+      "level": 10
     }
   },
   "handlers": {
@@ -23,7 +27,9 @@
       "level": "DEBUG",
       "formatter": "simple",
       "stream": "ext://sys.stdout",
-      "filters": ["max-level-filter"]
+      "filters": [
+        "max-level-filter-info"
+      ]
     },
     "console-not-used-yet": {
       "class": "logging.StreamHandler",
@@ -39,10 +45,11 @@
     }
   },
   "loggers": {
-    "ccxt": {
-      "level": "INFO",
+    "methena": {
+      "level": "DEBUG",
       "handlers": [
-        "console-not-used-yet"
+        "console",
+        "console-error"
       ],
       "propagate": false
     }
