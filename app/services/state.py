@@ -3,8 +3,8 @@ import logging
 
 from clients.filesystem_client import FilesystemClient
 from clients.postgres_client import PostgresClient
-from config import OHLCV_DB_STATE, OHLCV_CONFIG_FILE
-from errors import DatabaseConfigNotFoundError, NoConfigProvidedError, ConfigFileNotFoundError
+from config import OHLCV_CONFIG_FILE, OHLCV_DB_STATE
+from errors import ConfigFileNotFoundError, DatabaseConfigNotFoundError, NoConfigProvidedError
 from utils.singleton import Singleton
 
 log = logging.getLogger('methena')
@@ -16,13 +16,13 @@ def load_state(source='db'):
         try:
             config = __load_ohlcv_config_from_database()
         except DatabaseConfigNotFoundError as e:
-            log.warning('Trying to initialize state from config file.')
+            log.warning('Trying to initialize state from config file. Error: %s' % e)
             try:
                 config = __load_ohlcv_config_from_file()
             except ConfigFileNotFoundError as e:
                 raise NoConfigProvidedError(
                     'You have neither provided a database ohlcv config nor a ohlcv config file. '
-                    'Check your environment variables.')
+                    'Check your environment variables. Error: %s' % e)
     elif source == 'file':
         config = __load_ohlcv_config_from_file()
 
@@ -40,7 +40,7 @@ def __load_ohlcv_config_from_database():
         return config
     except TypeError as e:
         log.warning('Unable to load OHLCV config from database - No config is persisted. Please '
-                    'load the config from file and check your environment variables.')
+                    'load the config from file and check your environment variables. %s' % e)
         raise DatabaseConfigNotFoundError()
 
 

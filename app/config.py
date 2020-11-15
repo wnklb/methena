@@ -26,8 +26,7 @@ def get_bool(key, default):
 PSQL_DSN = getenv('PSQL_DSN')
 
 OHLCV_DB_STATE = get_bool('OHLCV_DB_STATE', 'False')
-print(OHLCV_DB_STATE)
-OHLCV_CONFIG_FILE = getenv('OHLCV_CONFIG_FILE', 'ohlcv_configa.json')
+OHLCV_CONFIG_FILE = getenv('OHLCV_CONFIG_FILE', 'ohlcv_config.json')
 
 SCHEMA_CCXT_OHLCV = getenv('SCHEMA_CCXT_OHLCV')
 SCHEMA_METHENA = getenv('SCHEMA_METHENA')
