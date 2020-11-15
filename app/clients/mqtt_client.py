@@ -85,6 +85,7 @@ class MqttClient(Singleton):
         exchanges = raw_descriptor[0]
         if exchanges == '*':
             exchanges = self.ccxt_service.get_exchanges()
+        # TODO: #2 how to handle if market init is not successful?
         task = asyncio.ensure_future(self.ccxt_service.init_exchange_markets(exchanges),
                                      loop=self.loop)
         task.add_done_callback(

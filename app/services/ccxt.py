@@ -125,6 +125,7 @@ class CCXTService(Singleton):
 
             self.postgres_client.create_exchange_ohlcv_table_if_not_exists(exchange_id)
         except Exception as e:  # TODO: find out the correct exception.
+            # TODO: #2 what to do if market init is unsuccessful?
             log.error('Unable to load markets for exchange {}.'.format(exchange_id))
             log.error(e)
 
