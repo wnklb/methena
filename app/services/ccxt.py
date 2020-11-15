@@ -83,9 +83,6 @@ class CCXTService(Singleton):
         log.debug('Building descriptor from {}'.format(raw_descriptor))
         exchanges, symbols, timeframes = raw_descriptor
 
-        # TODO: when building a descriptor, while not having the exchange initialized (no active
-        #  fetching, or has been deleted) handle the keyerror or same other smart way
-
         descriptor = {
             exchange: {
                 symbol: self.__get_timeframe_level(exchange, timeframes)
@@ -93,6 +90,7 @@ class CCXTService(Singleton):
             } for exchange in self.__get_exchange_level(exchanges)
         }
         log.debug('Created descriptor {}'.format(descriptor))
+
         return descriptor
 
     def validate_descriptor(self, descriptor):
@@ -113,11 +111,12 @@ class CCXTService(Singleton):
                                     'available at the exchange'.format(exchange, symbol, timeframe))
         return descriptor_validated
 
-    @staticmethod
-    def __get_exchange_level(exchanges):
+    def __get_exchange_level(self, exchanges):
         if '*' == exchanges:
             return ccxt.exchanges
-        return exchanges
+
+        # Only return exchanges that have been initialized before
+        return [exchange for exchange in exchanges if exchange in self.exchanges]
 
     def __get_symbol_level(self, exchange, symbols):
         if '*' == symbols:

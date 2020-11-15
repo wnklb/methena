@@ -44,11 +44,13 @@ class OHLCVFetcher:
     async def main(self):
         ok = True
         while ok:
+            await asyncio.sleep(1)
             self.state_service.set_has_new_config_flag(False)
             try:
                 await self.__fetch()
             except AsyncioError:
                 ok = False
+            print(self.state_service.get_exchanges_to_close())
             exchanges_to_close = self.state_service.get_exchanges_to_close()
             await self.ccxt_service.close(exchanges_to_close)
             self.state_service.clear_exchanges_to_close()
