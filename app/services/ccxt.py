@@ -93,25 +93,6 @@ class CCXTService(Singleton):
 
         return descriptor
 
-    def validate_descriptor(self, descriptor):
-        log.debug('Validating descriptor {}'.format(descriptor))
-        descriptor_validated = {exchange: {} for exchange in descriptor.keys()}
-        for exchange, symbols in descriptor.items():
-            for symbol, timeframes in symbols.items():
-                if self.__validate_symbol(exchange, symbol):
-                    descriptor_validated[exchange][symbol] = []
-                else:
-                    log.warning('Validation for {}.{} failed. The symbol is not available at the '
-                                'exchange'.format(exchange, symbol))
-                    continue
-                for timeframe in timeframes:
-                    if self.__validate_timeframe(exchange, timeframe):
-                        descriptor_validated[exchange][symbol].append(timeframe)
-                    else:
-                        log.warning('Validation for {}.{}.{} failed. The timeframe is not '
-                                    'available at the exchange'.format(exchange, symbol, timeframe))
-        return descriptor_validated
-
     def __get_exchange_level(self, exchanges):
         if '*' == exchanges:
             return ccxt.exchanges
@@ -122,12 +103,13 @@ class CCXTService(Singleton):
     def __get_symbol_level(self, exchange, symbols):
         if '*' == symbols:
             return self.exchanges[exchange].symbols
-        return symbols
+        return [symbol for symbol in symbols if self.__validate_symbol(exchange, symbol)]
 
     def __get_timeframe_level(self, exchange, timeframes):
         if '*' == timeframes:
             return self.exchanges[exchange].timeframes
-        return timeframes
+        return [timeframe for timeframe in timeframes if
+                self.__validate_timeframe(exchange, timeframe)]
 
     async def __init_exchange_market(self, exchange_id):
         if exchange_id in self.exchanges:
@@ -146,7 +128,15 @@ class CCXTService(Singleton):
             log.error(e)
 
     def __validate_symbol(self, exchange, symbol):
-        return True if symbol in self.exchanges[exchange].symbols else False
+        if symbol not in self.exchanges[exchange].symbols:
+            log.warning('Validation for {}.{} failed. The symbol is not available at the '
+                        'exchange'.format(exchange, symbol))
+            return False
+        return True
 
     def __validate_timeframe(self, exchange, timeframe):
-        return True if timeframe in self.exchanges[exchange].timeframes else False
+        if timeframe not in self.exchanges[exchange].timeframes:
+            log.warning('Validation for {}.{} failed. The timeframe is not '
+                        'available at the exchange'.format(exchange, timeframe))
+            return False
+        return True

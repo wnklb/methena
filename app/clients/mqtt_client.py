@@ -95,13 +95,11 @@ class MqttClient(Singleton):
 
     def __callback_on_ccxt_ohlcv_message_add(self, raw_descriptor, result):
         descriptor = self.ccxt_service.build_descriptor(raw_descriptor)
-        descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
-        self.state_service.add_descriptor(descriptor_validated)
+        self.state_service.add_descriptor(descriptor)
 
     def __on_ccxt_ohlcv_message_remove(self, raw_descriptor):
         descriptor = self.ccxt_service.build_descriptor(raw_descriptor)
-        descriptor_validated = self.ccxt_service.validate_descriptor(descriptor)
-        self.state_service.remove_descriptor(descriptor_validated)
+        self.state_service.remove_descriptor(descriptor)
 
     # The callback for when a PUBLISH message is received from the server.
     def __on_disconnect(self, client, userdata, rc):
