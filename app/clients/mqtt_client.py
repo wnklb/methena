@@ -5,6 +5,7 @@ import logging
 import paho.mqtt.client as mqtt
 
 from config import MQTT_HOST, MQTT_PORT, MQTT_TOPIC_CCXT_OHLCV
+from errors.mqtt import MQTTBrokerNotAccessibleError
 from services import CCXTService, StateService
 from utils.mqtt_parser import MQTTParser
 from utils.singleton import Singleton
@@ -36,8 +37,9 @@ class MqttClient(Singleton):
         try:
             self.client.connect(MQTT_HOST, MQTT_PORT)
         except Exception as e:
-            raise ConnectionError('Unable to connect to mqtt broker at {}:{}. Error: {}'.format(
-                MQTT_HOST, MQTT_PORT, e))
+            raise MQTTBrokerNotAccessibleError(
+                'Unable to connect to mqtt broker at {}:{}. {}. \nPlease make sure your broker is '
+                'running!'.format(MQTT_HOST, MQTT_PORT, e))
         self.client.loop_start()
         log.info('MQTT loop started')
         return self
@@ -63,8 +65,8 @@ class MqttClient(Singleton):
             log.info('MQTT client successfully connected to broker at {}:{}'.format(MQTT_HOST,
                                                                                     MQTT_PORT))
         else:
+            # TODO: check if we can actually handle a failed connectio here on have
             log.warning('MQTT failed connecting to broker at {}:{}'.format(MQTT_HOST, MQTT_PORT))
-            # TODO: raise exception that we were unable to connect
 
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.

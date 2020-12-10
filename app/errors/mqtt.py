@@ -1,0 +1,2 @@
+class MQTTBrokerNotAccessibleError(Exception):
+    pass

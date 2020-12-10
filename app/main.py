@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import sys
+import traceback
 
 import tornado_app
 from errors import NoStateProvidedError
@@ -28,5 +29,7 @@ if __name__ == '__main__':
         asyncio.run(main())
     except KeyboardInterrupt:
         log.info('Exit 0 via Keyboard Interrupt')
+    except Exception as e:
+        traceback.print_exc()
     finally:
         sys.exit(0)
