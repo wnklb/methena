@@ -2,10 +2,9 @@ import json
 import traceback
 from typing import Awaitable, Optional
 
-from tornado.web import RequestHandler
-
 from config import CORS_ORIGIN
 from errors import HTTPBadRequestError
+from tornado.web import RequestHandler
 from utils.tornado import json_encode
 
 

@@ -14,19 +14,39 @@ the [ccxt library](https://github.com/ccxt/ccxt). It comes with the following fe
 
 ## 2. Setup
 
-TODO: describe correct setup
+Please follow **ALL** steps to setup this service. It is highly recommended to use Linux/Mac/WSL. If you need to use Windows, please make sure to use WSL. Aany complications under windows (e.g. not having uvloop) are up to the user to fix for himself.
 
-### 2.1. Dependencies
+### 2.1. Python Dependencies
+
+It is recommended to use virtual environments. One easy and reliable solution is [virtualenwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/).
 
 ```bash
 pip install -r app/requirements.txt
+
+# and for development
+pip install -r app/requirements_dev.txt
 ```
 
-### 2.1. Environment Variables
+### 2.2. Environment Variables
+
+I highly advice to use [direnv](https://direnv.net/) for virtual env management, but any other way will do. Just make sure to populate your `.env` file.
 
 Copy `.env_template` to `.env` and populate values.
 
-### 2.2. Postgres
+### 2.3. Postgres
+
+Install postgres:
+
+```bash
+# Official doc: https://www.postgresql.org/download/linux/ubuntu/
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt-get update
+sudo apt-get -y install postgresql
+```
+
+
+Setup your database, schema and user:
 
 ```bash
 sudo su - postgres
@@ -41,7 +61,7 @@ GRANT ALL PRIVILEGES ON DATABASE methena to methena;
 CREATE SCHEMA IF NOT EXISTS ccxt;
 ```
 
-### 2.3. MQTT
+### 2.4. MQTT
 
 In order to use MQTT you need have a broker (and optionally a client) installed on your system. The easiest way (on
 Linux) is to run:
@@ -57,11 +77,11 @@ sudo service mosquitto status
 sudo service mosquitto start
 ```
 
-### 2.4. OHLCV Fetch Config
+### 2.5. OHLCV Fetch Config
 
 Copy `ohlcv_config_template.json` to `ohlcv_config.json` and change values if necessary.
 
-### 2.5. Logging (optional)
+### 2.6. Logging (optional)
 
 ---
 

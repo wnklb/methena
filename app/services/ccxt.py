@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 import ccxt.async_support as ccxt
-
 from clients.postgres_client import PostgresClient
 from services.state import StateService
 from utils.singleton import Singleton

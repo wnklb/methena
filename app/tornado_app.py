@@ -3,14 +3,13 @@ import logging
 import tornado.ioloop
 import tornado.locks
 import tornado.web
-from tornado.options import define, options
-from tornado.routing import HostMatches
-
 from config import APP_PORT, AUTORELOAD, COMPRESS_RESPONSE, DEBUG, SERVE_TRACEBACK
 from handlers import (CCXTExchangeBasesHandler, CCXTExchangeHandler, CCXTExchangeQuotesHandler,
                       CCXTExchangesHandler, CCXTExchangeSymbolsHandler, MethenaExchangesHandler,
                       MethenaOHLCVStatusHandler)
 from services import CCXTService, PostgresClient
+from tornado.options import define, options
+from tornado.routing import HostMatches
 
 log = logging.getLogger('methena')
 

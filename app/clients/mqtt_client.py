@@ -3,7 +3,6 @@ import functools
 import logging
 
 import paho.mqtt.client as mqtt
-
 from config import MQTT_HOST, MQTT_PORT, MQTT_TOPIC_CCXT_OHLCV
 from errors.mqtt import MQTTBrokerNotAccessibleError
 from services import CCXTService, StateService

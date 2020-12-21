@@ -2,7 +2,6 @@ import logging
 
 import psycopg2
 import psycopg2.extras
-
 from config import PSQL_DSN, SCHEMA_CCXT_OHLCV, SCHEMA_METHENA
 from sql.ddl import create_table_ccxt_ohlcv_status
 from utils.postgres import convert_datetime_to_timestamp

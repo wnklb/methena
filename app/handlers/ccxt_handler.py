@@ -1,6 +1,5 @@
-from tornado.escape import json_encode
-
 from handlers import BaseHandler
+from tornado.escape import json_encode
 from utils.ccxt import parse_exchange_to_json
 
 
