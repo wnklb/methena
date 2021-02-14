@@ -26,3 +26,9 @@ select_ohlcv_entries = """
     ORDER BY timestamp DESC
     LIMIT 100;
 """
+
+select_ohlcv_fetcher_state = """
+    SELECT config
+    FROM methena.ccxt_ohlcv_fetcher_state
+    WHERE id = 1;
+"""
