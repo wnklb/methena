@@ -51,6 +51,23 @@ class PostgresClient(Singleton):
         self.__execute(query, values)
         self.__commit()
 
+
+    def insert(self, query, values):
+        self.__execute_and_commit(query, values)
+
+    def insert_many(self, query, values, page_size=1000):
+        psycopg2.extras.execute_values(self.cur, query, values, page_size=page_size)
+        self.__commit()
+
+    def fetch_one(self, query):
+        self.__execute(query)
+        return self.cur.fetchone()
+
+    def fetch_many(self, query):
+        self.__execute(query)
+        return self.cur.fetchall()
+
+    # ===================== [ Custom Calls ] =====================
     def create_schema_if_not_exist(self, schema: str):
         # TODO: get state and log dependingly
         query = """CREATE SCHEMA IF NOT EXISTS {schema};""".format(schema=schema)
@@ -90,25 +107,10 @@ class PostgresClient(Singleton):
         );""".format(schema=SCHEMA_CCXT_OHLCV, table=table)
         self.__execute_and_commit(query)
 
-    def insert(self, query, values):
-        self.__execute_and_commit(query, values)
-
     def insert_ohlcv_entries(self, values, table, schema=SCHEMA_CCXT_OHLCV, page_size=1000):
         query = "INSERT INTO {schema}.{table} VALUES %s;".format(schema=schema, table=table)
         psycopg2.extras.execute_values(self.cur, query, values, page_size=page_size)
         self.__commit()
-
-    def insert_many(self, query, values, page_size=1000):
-        psycopg2.extras.execute_values(self.cur, query, values, page_size=page_size)
-        self.__commit()
-
-    def fetch_one(self, query):
-        self.__execute(query)
-        return self.cur.fetchone()
-
-    def fetch_many(self, query):
-        self.__execute(query)
-        return self.cur.fetchall()
 
     def fetch_latest_timestamp(self, exchange, symbol, timeframe):
         query = """
