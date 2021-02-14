@@ -71,25 +71,6 @@ class PostgresClient(Singleton):
         return self.cur.fetchall()
 
     # ===================== [ Custom Calls ] =====================
-    def fetch_latest_timestamp(self, exchange, symbol, timeframe):
-        query = """
-        SELECT timestamp from {schema}.{exchange}
-        WHERE symbol='{symbol}'
-        AND timeframe='{timeframe}'
-        ORDER BY timestamp DESC
-        LIMIT 1;
-        """.format(
-            schema=SCHEMA_CCXT_OHLCV,
-            exchange=exchange,
-            symbol=symbol,
-            timeframe=timeframe
-        )
-        datetime_ = self.fetch_one(query)
-        if datetime_ is None:
-            return
-        timestamp = convert_datetime_to_timestamp(datetime_[0])
-        return timestamp
-
     def set_ccxt_ohlcv_fetcher_config(self, state):
         query = """
         insert into methena.ccxt_ohlcv_fetcher_state (id, config, timestamp)

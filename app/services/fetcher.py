@@ -9,7 +9,8 @@ from errors import AsyncioError, FetchError
 from services.ccxt import CCXTService
 from services.state import StateService
 from sql.insert import insert_ohlcv_entries
-from utils.postgres import prepare_data_for_postgres
+from sql.select import select_latest_timestamp
+from utils.postgres import prepare_data_for_postgres, convert_datetime_to_timestamp
 
 log = logging.getLogger('methena')
 
@@ -156,7 +157,11 @@ class OHLCVFetcher:
     def __get_since_timestamp(self, exchange, symbol, timeframe):
         since = None
         try:
-            since = self.postgres_client.fetch_latest_timestamp(exchange.id, symbol, timeframe)
+            query = select_latest_timestamp.format(schema=SCHEMA_CCXT_OHLCV, exchange=exchange.id,
+                                                   symbol=symbol, timeframe=timeframe)
+            datetime_ = self.postgres_client.fetch_one(query)
+            if datetime_:
+                since = convert_datetime_to_timestamp(datetime_[0])
         except Exception as e:
             log.info('[{}] [{}] [{}] - No previous timestamp available. Fetching from start'.format(
                 exchange.id, symbol, timeframe))

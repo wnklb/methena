@@ -32,3 +32,11 @@ select_ohlcv_fetcher_state = """
     FROM methena.ccxt_ohlcv_fetcher_state
     WHERE id = 1;
 """
+
+select_latest_timestamp = """
+    SELECT timestamp from {schema}.{exchange}
+    WHERE symbol='{symbol}'
+    AND timeframe='{timeframe}'
+    ORDER BY timestamp DESC
+    LIMIT 1;
+"""
