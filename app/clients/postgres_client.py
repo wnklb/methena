@@ -71,11 +71,6 @@ class PostgresClient(Singleton):
         return self.cur.fetchall()
 
     # ===================== [ Custom Calls ] =====================
-    def insert_ohlcv_entries(self, values, table, schema=SCHEMA_CCXT_OHLCV, page_size=1000):
-        query = "INSERT INTO {schema}.{table} VALUES %s;".format(schema=schema, table=table)
-        psycopg2.extras.execute_values(self.cur, query, values, page_size=page_size)
-        self.__commit()
-
     def fetch_latest_timestamp(self, exchange, symbol, timeframe):
         query = """
         SELECT timestamp from {schema}.{exchange}

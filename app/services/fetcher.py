@@ -4,9 +4,11 @@ from time import time
 
 from clients.mqtt_client import MqttClient
 from clients.postgres_client import PostgresClient
+from config import SCHEMA_CCXT_OHLCV
 from errors import AsyncioError, FetchError
 from services.ccxt import CCXTService
 from services.state import StateService
+from sql.insert import insert_ohlcv_entries
 from utils.postgres import prepare_data_for_postgres
 
 log = logging.getLogger('methena')
@@ -142,7 +144,8 @@ class OHLCVFetcher:
             values = prepare_data_for_postgres(symbol, timeframe, ohlcv_data)
             # For now, we don't care why/that this fails und just pop it.
             # TODO: handling of psql error should be implemented later.
-            self.postgres_client.insert_ohlcv_entries(values, exchange.id)
+            self.postgres_client.insert_many(
+                insert_ohlcv_entries.format(schema=SCHEMA_CCXT_OHLCV, table=exchange.id), values)
             log.debug('[{}] [{}] [{}] - Successfully inserted OHLCV chunk.'.format(
                 exchange.id, symbol, timeframe))
 

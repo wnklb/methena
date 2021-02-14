@@ -6,3 +6,7 @@ upsert_ccxt_ohlcv_status_query = """
     DO UPDATE
     SET latest_timestamp = EXCLUDED.latest_timestamp;
 """
+
+insert_ohlcv_entries = """
+    INSERT INTO {schema}.{table} VALUES %s;
+"""
