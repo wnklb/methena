@@ -50,7 +50,7 @@ def __load_ohlcv_config_from_file():
     try:
         config = FilesystemClient.load_ohlcv_config()
         log.info('StateService initialized config from OHLCV config file.')
-        PostgresClient().insert(UPSERT_CCXT_OHLCV_FETCHER_STATE, json.dumps(config))
+        PostgresClient().insert(UPSERT_CCXT_OHLCV_FETCHER_STATE, (json.dumps(config),))
         log.info('Persisted config to postgres')
         return config
     except FileNotFoundError as e:

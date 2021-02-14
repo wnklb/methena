@@ -4,7 +4,7 @@ from datetime import datetime
 log = logging.getLogger('methena')
 
 
-def prepare_data_for_postgres(symbol: str, timeframe: str, ohlcv_data: list) -> list:
+def prepare_ohlcv_data_for_postgres(symbol: str, timeframe: str, ohlcv_data: list) -> list:
     data = []
     for record in ohlcv_data:
         timestamp, open, high, low, close, volume = record

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime
 from time import time
 
 from clients.mqtt_client import MqttClient
@@ -8,9 +9,9 @@ from config import SCHEMA_CCXT_OHLCV
 from errors import AsyncioError, FetchError
 from services.ccxt import CCXTService
 from services.state import StateService
-from sql.insert import INSERT_OHLCV_ENTRIES
+from sql.insert import INSERT_OHLCV_ENTRIES, UPSERT_CCXT_OHLCV_STATUS
 from sql.select import SELECT_LATEST_TIMESTAMP
-from utils.postgres import prepare_data_for_postgres, convert_datetime_to_timestamp
+from utils.postgres import prepare_ohlcv_data_for_postgres, convert_datetime_to_timestamp
 
 log = logging.getLogger('methena')
 
@@ -142,12 +143,17 @@ class OHLCVFetcher:
                 count += len(ohlcv_data)
                 since = latest_timestamp
 
-            values = prepare_data_for_postgres(symbol, timeframe, ohlcv_data)
+            values = prepare_ohlcv_data_for_postgres(symbol, timeframe, ohlcv_data)
             # For now, we don't care why/that this fails und just pop it.
             # TODO: handling of psql error should be implemented later.
             self.postgres_client.insert_many(
                 INSERT_OHLCV_ENTRIES.format(schema=SCHEMA_CCXT_OHLCV, table=exchange.id), values)
             log.debug('[{}] [{}] [{}] - Successfully inserted OHLCV chunk.'.format(
+                exchange.id, symbol, timeframe))
+
+            ohlcv_status = (exchange.id, symbol, timeframe, datetime.fromtimestamp(latest_timestamp / 1000))
+            self.postgres_client.insert(UPSERT_CCXT_OHLCV_STATUS, (ohlcv_status,))
+            log.debug('[{}] [{}] [{}] - Successfully updated OHLCV STATUS.'.format(
                 exchange.id, symbol, timeframe))
 
         duration = time() - start_time
