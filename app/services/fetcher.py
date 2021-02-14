@@ -8,8 +8,8 @@ from config import SCHEMA_CCXT_OHLCV
 from errors import AsyncioError, FetchError
 from services.ccxt import CCXTService
 from services.state import StateService
-from sql.insert import insert_ohlcv_entries
-from sql.select import select_latest_timestamp
+from sql.insert import INSERT_OHLCV_ENTRIES
+from sql.select import SELECT_LATEST_TIMESTAMP
 from utils.postgres import prepare_data_for_postgres, convert_datetime_to_timestamp
 
 log = logging.getLogger('methena')
@@ -146,7 +146,7 @@ class OHLCVFetcher:
             # For now, we don't care why/that this fails und just pop it.
             # TODO: handling of psql error should be implemented later.
             self.postgres_client.insert_many(
-                insert_ohlcv_entries.format(schema=SCHEMA_CCXT_OHLCV, table=exchange.id), values)
+                INSERT_OHLCV_ENTRIES.format(schema=SCHEMA_CCXT_OHLCV, table=exchange.id), values)
             log.debug('[{}] [{}] [{}] - Successfully inserted OHLCV chunk.'.format(
                 exchange.id, symbol, timeframe))
 
@@ -157,7 +157,7 @@ class OHLCVFetcher:
     def __get_since_timestamp(self, exchange, symbol, timeframe):
         since = None
         try:
-            query = select_latest_timestamp.format(schema=SCHEMA_CCXT_OHLCV, exchange=exchange.id,
+            query = SELECT_LATEST_TIMESTAMP.format(schema=SCHEMA_CCXT_OHLCV, exchange=exchange.id,
                                                    symbol=symbol, timeframe=timeframe)
             datetime_ = self.postgres_client.fetch_one(query)
             if datetime_:

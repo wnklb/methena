@@ -1,12 +1,12 @@
-create_schema_ccxt_ohlcv = """
+CREATE_SCHEMA_CCXT_OHLCV = """
     CREATE SCHEMA IF NOT EXISTS ccxt_ohlcv;
 """
 
-create_schema_methena = """
+CREATE_SCHEMA_METHENA = """
     CREATE SCHEMA IF NOT EXISTS methena;
 """
 
-create_table_ccxt_ohlcv_status = """
+CREATE_TABLE_CCXT_OHLCV_STATUS = """
     create table if not exists methena.ccxt_ohlcv_status
     (
         exchange varchar not null,
@@ -18,7 +18,7 @@ create_table_ccxt_ohlcv_status = """
     );
 """
 
-create_table_ccxt_ohlcv_fetcher_state_if_not_exists = """
+CREATE_TABLE_CCXT_OHLCV_FETCHER_STATE_IF_NOT_EXISTS = """
     create table if not exists ccxt_ohlcv_fetcher_state
     (
         config jsonb not null,
@@ -31,7 +31,7 @@ create_table_ccxt_ohlcv_fetcher_state_if_not_exists = """
     alter table ccxt_ohlcv_fetcher_state owner to methena;
 """
 
-create_exchange_ohlcv_table_if_not_exists = """
+CREATE_EXCHANGE_OHLCV_TABLE_IF_NOT_EXISTS = """
     CREATE TABLE IF NOT EXISTS {schema}.{table} (
         symbol varchar(16),
         timeframe varchar(2),

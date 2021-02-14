@@ -5,8 +5,8 @@ from clients.filesystem_client import FilesystemClient
 from clients.postgres_client import PostgresClient
 from config import OHLCV_CONFIG_FILE, OHLCV_DB_STATE
 from errors import ConfigFileNotFoundError, DatabaseConfigNotFoundError, NoConfigProvidedError
-from sql.insert import upsert_ccxt_ohlcv_fetcher_state
-from sql.select import select_ohlcv_fetcher_state
+from sql.insert import UPSERT_CCXT_OHLCV_FETCHER_STATE
+from sql.select import SELECT_OHLCV_FETCHER_STATE
 from utils.singleton import Singleton
 
 log = logging.getLogger('methena')
@@ -37,7 +37,7 @@ def load_state(source='db'):
 
 def __load_ohlcv_config_from_database():
     try:
-        config = PostgresClient().fetch_one(select_ohlcv_fetcher_state)[0]
+        config = PostgresClient().fetch_one(SELECT_OHLCV_FETCHER_STATE)[0]
         log.info('StateService initialized config from database.')
         return config
     except TypeError as e:
@@ -50,7 +50,7 @@ def __load_ohlcv_config_from_file():
     try:
         config = FilesystemClient.load_ohlcv_config()
         log.info('StateService initialized config from OHLCV config file.')
-        PostgresClient().insert(upsert_ccxt_ohlcv_fetcher_state, json.dumps(config))
+        PostgresClient().insert(UPSERT_CCXT_OHLCV_FETCHER_STATE, json.dumps(config))
         log.info('Persisted config to postgres')
         return config
     except FileNotFoundError as e:
@@ -134,7 +134,7 @@ class StateService(Singleton):
 
     # ================= [ Persist State ] =================
     def _persist_state(self):
-        self.postgres_client.insert(upsert_ccxt_ohlcv_fetcher_state, json.dumps(self.state['config']))
+        self.postgres_client.insert(UPSERT_CCXT_OHLCV_FETCHER_STATE, json.dumps(self.state['config']))
         log.info('Persisted config to postgres')
 
     # ================= [ Exchange Open/Close State ] =================

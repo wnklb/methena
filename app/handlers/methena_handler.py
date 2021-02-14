@@ -2,23 +2,24 @@ import datetime
 from collections import OrderedDict
 
 from handlers import BaseHandler
-from sql.insert import upsert_ccxt_ohlcv_status_query
-from sql.select import (select_ccxt_ohlcv_exchange_tables, select_latest_ccxt_ohlcv_entry,
-                        select_ohlcv_status, select_ohlcv_fetcher_state)
+from sql.insert import UPSERT_CCXT_OHLCV_STATUS_QUERY
+from sql.select import (SELECT_CCXT_OHLCV_EXCHANGE_TABLES, SELECT_LATEST_CCXT_OHLCV_ENTRY,
+                        SELECT_OHLCV_STATUS, SELECT_OHLCV_FETCHER_STATE)
 
 
 class MethenaExchangesHandler(BaseHandler):
     async def get(self):
-        records = self.application.pg.fetch_many(select_ccxt_ohlcv_exchange_tables)
+        records = self.application.pg.fetch_many(SELECT_CCXT_OHLCV_EXCHANGE_TABLES)
         result = [record[0] for record in records]
         self.write_json(result)
 
 
 class MethenaOHLCVStatusHandler(BaseHandler):
     async def get(self):
-        results = self.application.pg.fetch_many(select_ohlcv_status)
+        results = self.application.pg.fetch_many(SELECT_OHLCV_STATUS)
 
-        data = OrderedDict()
+        # data = OrderedDict()
+        data = []
         for result in results:
             exchange = result[0]
             symbol = result[1]
@@ -52,14 +53,14 @@ class MethenaOHLCVStatusHandler(BaseHandler):
     # TODO: implemented?
     async def post(self):
         """Updates the status of the latest OHLCV fetch."""
-        exchange_tables = self.application.pg.fetch_many(select_ccxt_ohlcv_exchange_tables)
+        exchange_tables = self.application.pg.fetch_many(SELECT_CCXT_OHLCV_EXCHANGE_TABLES)
         exchanges = [record[0] for record in exchange_tables]
 
         data = []
         for exchange in exchanges:
 
             # This query returns the latest reported timestamp for the given descriptor.
-            query = select_latest_ccxt_ohlcv_entry.format(exchange=exchange)
+            query = SELECT_LATEST_CCXT_OHLCV_ENTRY.format(exchange=exchange)
             latest_ohlcv_entries = self.application.pg.fetch_many(query)
 
             if not latest_ohlcv_entries:
@@ -67,11 +68,11 @@ class MethenaOHLCVStatusHandler(BaseHandler):
             for entry in latest_ohlcv_entries:
                 data.append((exchange, entry[0], entry[1], entry[2]))
 
-        self.application.pg.insert_many(upsert_ccxt_ohlcv_status_query, data)
+        self.application.pg.insert_many(UPSERT_CCXT_OHLCV_STATUS_QUERY, data)
         self.set_status(204)
 
 
 class MethenaOHLCVFetcherStateHandler(BaseHandler):
     async def get(self):
-        data = self.application.pg.fetch_one(select_ohlcv_fetcher_state)
+        data = self.application.pg.fetch_one(SELECT_OHLCV_FETCHER_STATE)
         self.write_json(data)

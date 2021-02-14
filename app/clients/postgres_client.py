@@ -3,8 +3,8 @@ import logging
 import psycopg2
 import psycopg2.extras
 from config import PSQL_DSN, SCHEMA_CCXT_OHLCV, SCHEMA_METHENA
-from sql.ddl import create_table_ccxt_ohlcv_status, create_schema_ccxt_ohlcv, create_schema_methena, \
-    create_table_ccxt_ohlcv_fetcher_state_if_not_exists
+from sql.ddl import CREATE_TABLE_CCXT_OHLCV_STATUS, CREATE_SCHEMA_CCXT_OHLCV, CREATE_SCHEMA_METHENA, \
+    CREATE_TABLE_CCXT_OHLCV_FETCHER_STATE_IF_NOT_EXISTS
 from utils.postgres import convert_datetime_to_timestamp
 from utils.singleton import Singleton
 
@@ -35,10 +35,10 @@ class PostgresClient(Singleton):
         return self
 
     def __setup(self):
-        self.execute(create_schema_ccxt_ohlcv)
-        self.execute(create_schema_methena)
-        self.execute(create_table_ccxt_ohlcv_fetcher_state_if_not_exists)
-        self.execute(create_table_ccxt_ohlcv_status)
+        self.execute(CREATE_SCHEMA_CCXT_OHLCV)
+        self.execute(CREATE_SCHEMA_METHENA)
+        self.execute(CREATE_TABLE_CCXT_OHLCV_FETCHER_STATE_IF_NOT_EXISTS)
+        self.execute(CREATE_TABLE_CCXT_OHLCV_STATUS)
         self.setup_done = True
         log.info('PostgresClient setup done - initial schemas and tables created.')
 

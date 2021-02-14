@@ -1,4 +1,4 @@
-upsert_ccxt_ohlcv_status_query = """
+UPSERT_CCXT_OHLCV_STATUS_QUERY = """
     INSERT INTO methena.ccxt_ohlcv_status
     (exchange, symbol, timeframe, latest_timestamp)
     VALUES %s
@@ -7,11 +7,11 @@ upsert_ccxt_ohlcv_status_query = """
     SET latest_timestamp = EXCLUDED.latest_timestamp;
 """
 
-insert_ohlcv_entries = """
+INSERT_OHLCV_ENTRIES = """
     INSERT INTO {schema}.{table} VALUES %s;
 """
 
-upsert_ccxt_ohlcv_fetcher_state = """
+UPSERT_CCXT_OHLCV_FETCHER_STATE = """
     insert into methena.ccxt_ohlcv_fetcher_state (id, config, timestamp)
     values (1, %s, CURRENT_TIMESTAMP)
     ON CONFLICT (id)
