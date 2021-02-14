@@ -64,9 +64,7 @@ class StateService(Singleton):
     state = load_state() if OHLCV_DB_STATE else load_state('file')
     log.debug('Created StateService')
 
-    def get_state(self):
-        return self.state
-
+    # ================= [ Common Getters ] =================
     def get_exchanges(self):
         return self.state['config'].keys()
 
@@ -76,12 +74,14 @@ class StateService(Singleton):
     def get_timeframes(self, exchange, symbol):
         return self.state['config'][exchange][symbol]
 
+    # ================= [ Config Checks ] =================
     def has_new_config(self):
         return self.state['has_new_config']
 
     def set_has_new_config_flag(self, state):
         self.state['has_new_config'] = state
 
+    # ================= [ Descriptors ] =================
     def add_descriptor(self, descriptor):
         log.debug('State :: Adding descriptor {}'.format(descriptor))
         config = self.state['config']
@@ -107,7 +107,7 @@ class StateService(Singleton):
                     config[exchange][symbol] = timeframes
                     log.debug(
                         'State :: Added {} to {} with {}'.format(symbol, exchange, timeframes))
-        self.persist_config()
+        self._persist_state()
         self.set_has_new_config_flag(True)
 
     def remove_descriptor(self, descriptor):
@@ -126,12 +126,18 @@ class StateService(Singleton):
                     log.debug('State :: Removed {}.{}'.format(exchange, symbol))
             if len(config[exchange]) == 0:
                 del config[exchange]
-                self.add_exchange_to_close(exchange)
+                self._add_exchange_to_close(exchange)
                 log.debug('State :: Removed {}'.format(exchange))
-        self.persist_config()
+        self._persist_state()
         self.set_has_new_config_flag(True)
 
-    def add_exchange_to_close(self, exchange):
+    # ================= [ Persist State ] =================
+    def _persist_state(self):
+        self.postgres_client.set_ccxt_ohlcv_fetcher_config(json.dumps(self.state['config']))
+        log.info('Persisted config to postgres')
+
+    # ================= [ Exchange Open/Close State ] =================
+    def _add_exchange_to_close(self, exchange):
         log.debug('Set exchange {} to be closed'.format(exchange))
         self.state['exchanges_to_close'].add(exchange)
 
@@ -141,7 +147,3 @@ class StateService(Singleton):
     def clear_exchanges_to_close(self):
         log.debug('Cleared exchanges to be closed')
         self.state['exchanges_to_close'].clear()
-
-    def persist_config(self):
-        self.postgres_client.set_ccxt_ohlcv_fetcher_config(json.dumps(self.state['config']))
-        log.info('Persisted config to postgres')
