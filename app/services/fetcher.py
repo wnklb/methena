@@ -123,6 +123,7 @@ class OHLCVFetcher:
         since = self.__get_since_timestamp(exchange, symbol, timeframe)
         entry_count, fetch_count = 0, 0
         start_time = time()
+        last_time = time()
 
         while True:
             if self.state_service.has_new_config():
@@ -140,7 +141,8 @@ class OHLCVFetcher:
                 # TODO: check for some exit msg or whatnot
                 break
             else:
-                entry_count += len(ohlcv_data)
+                chunk_length = len(ohlcv_data)
+                entry_count += chunk_length
                 fetch_count += 1
                 since = latest_timestamp
 
@@ -149,8 +151,12 @@ class OHLCVFetcher:
             # TODO: handling of psql error should be implemented later.
             self.postgres_client.insert_many(
                 INSERT_OHLCV_ENTRIES.format(schema=SCHEMA_CCXT_OHLCV, table=exchange.id), values)
-            log.debug('[{}] [{}] [{}] - Successfully inserted OHLCV chunk.'.format(
-                exchange.id, symbol, timeframe))
+            log.debug('[{}] [{}] [{}] - Successfully inserted OHLCV chunk {} '
+                      'of length {} taking {:.2f}s (total: {:.2f}s).'.format(
+                exchange.id, symbol, timeframe, fetch_count, chunk_length,
+                time() - last_time, time() - start_time))
+
+            last_time = time()
 
             average_time_for_single_fetch = (time() - start_time) / fetch_count
             remaining_timespan = datetime.now() - datetime.fromtimestamp(
@@ -159,13 +165,13 @@ class OHLCVFetcher:
             seconds = remaining_timespan.seconds
 
             if timeframe == '1d':
-                remaining_fetches = int(days / len(ohlcv_data)) + 1
+                remaining_fetches = int(days / chunk_length) + 1
             elif timeframe == '1h':
                 remaining_fetches = int(
-                    days * 24 / len(ohlcv_data) + seconds / 3600 / len(ohlcv_data)) + 1
+                    days * 24 / chunk_length + seconds / 3600 / chunk_length) + 1
             elif timeframe == '1m':
                 remaining_fetches = int(
-                    days * 24 * 60 / len(ohlcv_data) + seconds / 60 / len(ohlcv_data)) + 1
+                    days * 24 * 60 / chunk_length + seconds / 60 / chunk_length) + 1
             else:
                 remaining_fetches = 0
             estimated_remaining_time = remaining_fetches * average_time_for_single_fetch
