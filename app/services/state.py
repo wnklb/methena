@@ -5,6 +5,7 @@ from clients.filesystem_client import FilesystemClient
 from clients.postgres_client import PostgresClient
 from config import OHLCV_CONFIG_FILE, OHLCV_DB_STATE
 from errors import ConfigFileNotFoundError, DatabaseConfigNotFoundError, NoConfigProvidedError
+from sql.insert import upsert_ccxt_ohlcv_fetcher_state
 from sql.select import select_ohlcv_fetcher_state
 from utils.singleton import Singleton
 
@@ -49,7 +50,7 @@ def __load_ohlcv_config_from_file():
     try:
         config = FilesystemClient.load_ohlcv_config()
         log.info('StateService initialized config from OHLCV config file.')
-        PostgresClient().set_ccxt_ohlcv_fetcher_config(json.dumps(config))
+        PostgresClient().insert(upsert_ccxt_ohlcv_fetcher_state, json.dumps(config))
         log.info('Persisted config to postgres')
         return config
     except FileNotFoundError as e:
@@ -133,7 +134,7 @@ class StateService(Singleton):
 
     # ================= [ Persist State ] =================
     def _persist_state(self):
-        self.postgres_client.set_ccxt_ohlcv_fetcher_config(json.dumps(self.state['config']))
+        self.postgres_client.insert(upsert_ccxt_ohlcv_fetcher_state, json.dumps(self.state['config']))
         log.info('Persisted config to postgres')
 
     # ================= [ Exchange Open/Close State ] =================

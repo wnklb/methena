@@ -69,17 +69,3 @@ class PostgresClient(Singleton):
     def fetch_many(self, query):
         self.__execute(query)
         return self.cur.fetchall()
-
-    # ===================== [ Custom Calls ] =====================
-    def set_ccxt_ohlcv_fetcher_config(self, state):
-        query = """
-        insert into methena.ccxt_ohlcv_fetcher_state (id, config, timestamp)
-        values (1, %s, CURRENT_TIMESTAMP)
-        ON CONFLICT (id)
-        DO UPDATE
-        SET
-            config = EXCLUDED.config,
-            timestamp = EXCLUDED.timestamp
-        ;
-        """
-        self.insert(query, (state,))

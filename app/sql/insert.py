@@ -10,3 +10,14 @@ upsert_ccxt_ohlcv_status_query = """
 insert_ohlcv_entries = """
     INSERT INTO {schema}.{table} VALUES %s;
 """
+
+upsert_ccxt_ohlcv_fetcher_state = """
+    insert into methena.ccxt_ohlcv_fetcher_state (id, config, timestamp)
+    values (1, %s, CURRENT_TIMESTAMP)
+    ON CONFLICT (id)
+    DO UPDATE
+    SET
+        config = EXCLUDED.config,
+        timestamp = EXCLUDED.timestamp
+    ;
+"""
