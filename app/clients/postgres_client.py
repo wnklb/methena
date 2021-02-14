@@ -3,7 +3,8 @@ import logging
 import psycopg2
 import psycopg2.extras
 from config import PSQL_DSN, SCHEMA_CCXT_OHLCV, SCHEMA_METHENA
-from sql.ddl import create_table_ccxt_ohlcv_status, create_schema_ccxt_ohlcv, create_schema_methena
+from sql.ddl import create_table_ccxt_ohlcv_status, create_schema_ccxt_ohlcv, create_schema_methena, \
+    create_table_ccxt_ohlcv_fetcher_state_if_not_exists
 from utils.postgres import convert_datetime_to_timestamp
 from utils.singleton import Singleton
 
@@ -36,8 +37,8 @@ class PostgresClient(Singleton):
     def __setup(self):
         self.execute(create_schema_ccxt_ohlcv)
         self.execute(create_schema_methena)
-        self.create_table_ccxt_ohlcv_fetcher_config_if_not_exists()
-        self.create_table_ccxt_ohlcv_status()
+        self.execute(create_table_ccxt_ohlcv_fetcher_state_if_not_exists)
+        self.execute(create_table_ccxt_ohlcv_status)
         self.setup_done = True
         log.info('PostgresClient setup done - initial schemas and tables created.')
 
@@ -70,25 +71,6 @@ class PostgresClient(Singleton):
         return self.cur.fetchall()
 
     # ===================== [ Custom Calls ] =====================
-
-    def create_table_ccxt_ohlcv_fetcher_config_if_not_exists(self):
-        # TODO: get state and log dependingly
-        query = """
-        create table if not exists ccxt_ohlcv_fetcher_state
-        (
-            config jsonb not null,
-            timestamp timestamp with time zone default CURRENT_TIMESTAMP not null,
-            id integer not null
-                constraint ccxt_ohlcv_fetcher_state_pk
-                    primary key
-        );
-
-        alter table ccxt_ohlcv_fetcher_state owner to methena;
-        """
-        self.__execute_and_commit(query)
-
-    def create_table_ccxt_ohlcv_status(self):
-        self.__execute_and_commit(create_table_ccxt_ohlcv_status)
 
     def create_exchange_ohlcv_table_if_not_exists(self, table):
         query = """
