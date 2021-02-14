@@ -13,7 +13,7 @@ SELECT_LATEST_CCXT_OHLCV_ENTRY = """
 """
 
 SELECT_OHLCV_STATUS = """
-    SELECT exchange, symbol, timeframe, latest_timestamp
+    SELECT exchange, symbol, timeframe, latest_timestamp, average_duration, estimated_remaining_time, remaining_fetches
     FROM methena.ccxt_ohlcv_status
     ORDER BY exchange, symbol, timeframe;
 """

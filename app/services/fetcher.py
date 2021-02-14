@@ -121,7 +121,7 @@ class OHLCVFetcher:
         log.info('[{}] [{}] [{}] - Fetching OHLCV timeseries'.format(
             exchange.id, symbol, timeframe))
         since = self.__get_since_timestamp(exchange, symbol, timeframe)
-        count = 0
+        entry_count, fetch_count = 0, 0
         start_time = time()
 
         while True:
@@ -140,7 +140,8 @@ class OHLCVFetcher:
                 # TODO: check for some exit msg or whatnot
                 break
             else:
-                count += len(ohlcv_data)
+                entry_count += len(ohlcv_data)
+                fetch_count += 1
                 since = latest_timestamp
 
             values = prepare_ohlcv_data_for_postgres(symbol, timeframe, ohlcv_data)
@@ -151,14 +152,34 @@ class OHLCVFetcher:
             log.debug('[{}] [{}] [{}] - Successfully inserted OHLCV chunk.'.format(
                 exchange.id, symbol, timeframe))
 
-            ohlcv_status = (exchange.id, symbol, timeframe, datetime.fromtimestamp(latest_timestamp / 1000))
+            average_time_for_single_fetch = (time() - start_time) / fetch_count
+            remaining_timespan = datetime.now() - datetime.fromtimestamp(
+                latest_timestamp / 1000)
+            days = remaining_timespan.days
+            seconds = remaining_timespan.seconds
+
+            if timeframe == '1d':
+                remaining_fetches = int(days / len(ohlcv_data)) + 1
+            elif timeframe == '1h':
+                remaining_fetches = int(
+                    days * 24 / len(ohlcv_data) + seconds / 3600 / len(ohlcv_data)) + 1
+            elif timeframe == '1m':
+                remaining_fetches = int(
+                    days * 24 * 60 / len(ohlcv_data) + seconds / 60 / len(ohlcv_data)) + 1
+            else:
+                remaining_fetches = 0
+            estimated_remaining_time = remaining_fetches * average_time_for_single_fetch
+
+            ohlcv_status = (
+                exchange.id, symbol, timeframe, datetime.fromtimestamp(latest_timestamp / 1000),
+                average_time_for_single_fetch, estimated_remaining_time, remaining_fetches)
             self.postgres_client.insert(UPSERT_CCXT_OHLCV_STATUS, (ohlcv_status,))
             log.debug('[{}] [{}] [{}] - Successfully updated OHLCV STATUS.'.format(
                 exchange.id, symbol, timeframe))
 
         duration = time() - start_time
         log.info('[{}] [{}] [{}] - Completed and fetched {} entries taking {:.2f}s.'.format(
-            exchange.id, symbol, timeframe, count, duration))
+            exchange.id, symbol, timeframe, entry_count, duration))
 
     def __get_since_timestamp(self, exchange, symbol, timeframe):
         since = None

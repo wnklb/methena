@@ -13,6 +13,9 @@ CREATE_TABLE_CCXT_OHLCV_STATUS = """
         symbol varchar not null,
         timeframe varchar not null,
         latest_timestamp timestamptz not null,
+        average_duration real,
+        estimated_remaining_time real,
+        remaining_fetches integer,
         constraint ccxt_ohlcv_pk
             primary key (exchange, symbol, timeframe)
     );
