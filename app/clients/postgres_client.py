@@ -141,12 +141,3 @@ class PostgresClient(Singleton):
         ;
         """
         self.insert(query, (state,))
-
-    def get_ccxt_ohlcv_fetcher_config(self):
-        query = """
-        SELECT config
-        FROM methena.ccxt_ohlcv_fetcher_state
-        WHERE id = 1;
-        """
-        res = self.fetch_one(query)
-        return res[0]

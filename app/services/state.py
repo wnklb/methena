@@ -5,6 +5,7 @@ from clients.filesystem_client import FilesystemClient
 from clients.postgres_client import PostgresClient
 from config import OHLCV_CONFIG_FILE, OHLCV_DB_STATE
 from errors import ConfigFileNotFoundError, DatabaseConfigNotFoundError, NoConfigProvidedError
+from sql.select import select_ohlcv_fetcher_state
 from utils.singleton import Singleton
 
 log = logging.getLogger('methena')
@@ -35,7 +36,7 @@ def load_state(source='db'):
 
 def __load_ohlcv_config_from_database():
     try:
-        config = PostgresClient().get_ccxt_ohlcv_fetcher_config()
+        config = PostgresClient().fetch_one(select_ohlcv_fetcher_state)[0]
         log.info('StateService initialized config from database.')
         return config
     except TypeError as e:
