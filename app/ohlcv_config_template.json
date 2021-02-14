@@ -2,10 +2,7 @@
   "binance": {
     "BTC/USDT": [
       "1d",
-      "1h",
-      "1m",
-      "1M",
-      "1M"
+      "1h"
     ],
     "ETH/BTC": [
       "1d",
@@ -13,6 +10,10 @@
     ]
   },
   "bitfinex": {
+    "BTC/USDT": [
+      "1d",
+      "1h"
+    ],
     "ETH/BTC": [
       "1d",
       "1h"
