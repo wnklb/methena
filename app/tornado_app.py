@@ -6,7 +6,7 @@ import tornado.web
 from config import APP_PORT, AUTORELOAD, COMPRESS_RESPONSE, DEBUG, SERVE_TRACEBACK
 from handlers import (CCXTExchangeBasesHandler, CCXTExchangeHandler, CCXTExchangeQuotesHandler,
                       CCXTExchangesHandler, CCXTExchangeSymbolsHandler, MethenaExchangesHandler,
-                      MethenaOHLCVStatusHandler)
+                      MethenaOHLCVStatusHandler, MethenaOHLCVFetcherStateHandler)
 from services import CCXTService, PostgresClient
 from tornado.options import define, options
 from tornado.routing import HostMatches
@@ -26,7 +26,8 @@ handlers = [
             (r"/ccxt/exchanges/([^/]+)/bases", CCXTExchangeBasesHandler),
             (r"/ccxt/exchanges/([^/]+)/quotes", CCXTExchangeQuotesHandler),
             (r"/methena/exchanges/", MethenaExchangesHandler),
-            (r"/methena/ohlcv-status/", MethenaOHLCVStatusHandler)
+            (r"/methena/ohlcv-status/", MethenaOHLCVStatusHandler),
+            (r"/methena/ohlcv-fetcher-state/", MethenaOHLCVFetcherStateHandler)
         ]
     )
 ]

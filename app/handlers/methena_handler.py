@@ -4,7 +4,7 @@ from collections import OrderedDict
 from handlers import BaseHandler
 from sql.insert import upsert_ccxt_ohlcv_status_query
 from sql.select import (select_ccxt_ohlcv_exchange_tables, select_latest_ccxt_ohlcv_entry,
-                        select_ohlcv_status)
+                        select_ohlcv_status, select_ohlcv_fetcher_state)
 
 
 class MethenaExchangesHandler(BaseHandler):
@@ -49,6 +49,7 @@ class MethenaOHLCVStatusHandler(BaseHandler):
 
         self.write_json(data)
 
+    # TODO: implemented?
     async def post(self):
         """Updates the status of the latest OHLCV fetch."""
         exchange_tables = self.application.pg.fetch_many(select_ccxt_ohlcv_exchange_tables)
@@ -68,3 +69,9 @@ class MethenaOHLCVStatusHandler(BaseHandler):
 
         self.application.pg.insert_many(upsert_ccxt_ohlcv_status_query, data)
         self.set_status(204)
+
+
+class MethenaOHLCVFetcherStateHandler(BaseHandler):
+    async def get(self):
+        data = self.application.pg.fetch_one(select_ohlcv_fetcher_state)
+        self.write_json(data)
