@@ -3,7 +3,7 @@ import logging
 import psycopg2
 import psycopg2.extras
 from config import PSQL_DSN, SCHEMA_CCXT_OHLCV, SCHEMA_METHENA
-from sql.ddl import create_table_ccxt_ohlcv_status
+from sql.ddl import create_table_ccxt_ohlcv_status, create_schema_ccxt_ohlcv, create_schema_methena
 from utils.postgres import convert_datetime_to_timestamp
 from utils.singleton import Singleton
 
@@ -34,8 +34,8 @@ class PostgresClient(Singleton):
         return self
 
     def __setup(self):
-        self.create_schema_if_not_exist(SCHEMA_CCXT_OHLCV)
-        self.create_schema_if_not_exist(SCHEMA_METHENA)
+        self.execute(create_schema_ccxt_ohlcv)
+        self.execute(create_schema_methena)
         self.create_table_ccxt_ohlcv_fetcher_config_if_not_exists()
         self.create_table_ccxt_ohlcv_status()
         self.setup_done = True
@@ -51,13 +51,15 @@ class PostgresClient(Singleton):
         self.__execute(query, values)
         self.__commit()
 
-
     def insert(self, query, values):
         self.__execute_and_commit(query, values)
 
     def insert_many(self, query, values, page_size=1000):
         psycopg2.extras.execute_values(self.cur, query, values, page_size=page_size)
         self.__commit()
+
+    def execute(self, query, values=None):
+        self.__execute_and_commit(query, values)
 
     def fetch_one(self, query):
         self.__execute(query)
@@ -68,11 +70,6 @@ class PostgresClient(Singleton):
         return self.cur.fetchall()
 
     # ===================== [ Custom Calls ] =====================
-    def create_schema_if_not_exist(self, schema: str):
-        # TODO: get state and log dependingly
-        query = """CREATE SCHEMA IF NOT EXISTS {schema};""".format(schema=schema)
-        self.__execute_and_commit(query)
-        # TODO: how do we know that a schema has been created?
 
     def create_table_ccxt_ohlcv_fetcher_config_if_not_exists(self):
         # TODO: get state and log dependingly
