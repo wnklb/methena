@@ -71,21 +71,6 @@ class PostgresClient(Singleton):
         return self.cur.fetchall()
 
     # ===================== [ Custom Calls ] =====================
-
-    def create_exchange_ohlcv_table_if_not_exists(self, table):
-        query = """
-        CREATE TABLE IF NOT EXISTS {schema}.{table} (
-            symbol varchar(16),
-            timeframe varchar(2),
-            timestamp timestamp,
-            open float,
-            high float,
-            low float,
-            close float,
-            volume float
-        );""".format(schema=SCHEMA_CCXT_OHLCV, table=table)
-        self.__execute_and_commit(query)
-
     def insert_ohlcv_entries(self, values, table, schema=SCHEMA_CCXT_OHLCV, page_size=1000):
         query = "INSERT INTO {schema}.{table} VALUES %s;".format(schema=schema, table=table)
         psycopg2.extras.execute_values(self.cur, query, values, page_size=page_size)

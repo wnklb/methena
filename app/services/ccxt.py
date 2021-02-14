@@ -3,7 +3,9 @@ import logging
 
 import ccxt.async_support as ccxt
 from clients.postgres_client import PostgresClient
+from config import SCHEMA_CCXT_OHLCV
 from services.state import StateService
+from sql.ddl import create_exchange_ohlcv_table_if_not_exists
 from utils.singleton import Singleton
 
 log = logging.getLogger('methena')
@@ -120,7 +122,9 @@ class CCXTService(Singleton):
             self.exchanges[exchange_id] = exchange
             log.info('Successfully loaded markets for {} and added them.'.format(exchange_id))
 
-            self.postgres_client.create_exchange_ohlcv_table_if_not_exists(exchange_id)
+            self.postgres_client.execute(
+                create_exchange_ohlcv_table_if_not_exists.format(schema=SCHEMA_CCXT_OHLCV,
+                                                                 table=exchange_id))
         except Exception as e:  # TODO: find out the correct exception.
             # TODO: #2 what to do if market init is unsuccessful?
             log.error('Unable to load markets for exchange {}.'.format(exchange_id))
