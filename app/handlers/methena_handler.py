@@ -2,7 +2,7 @@ import datetime
 from collections import OrderedDict
 
 from handlers import BaseHandler
-from sql.insert import UPSERT_CCXT_OHLCV_STATUS_QUERY
+from sql.insert import UPSERT_CCXT_OHLCV_STATUS
 from sql.select import (SELECT_CCXT_OHLCV_EXCHANGE_TABLES, SELECT_LATEST_CCXT_OHLCV_ENTRY,
                         SELECT_OHLCV_STATUS, SELECT_OHLCV_FETCHER_STATE)
 
@@ -16,42 +16,55 @@ class MethenaExchangesHandler(BaseHandler):
 
 class MethenaOHLCVStatusHandler(BaseHandler):
     async def get(self):
+        style = self.get_query_argument('style', default='flat')
         results = self.application.pg.fetch_many(SELECT_OHLCV_STATUS)
 
-        # data = OrderedDict()
-        data = []
-        for result in results:
-            exchange = result[0]
-            symbol = result[1]
-            timeframe = result[2]
-            timestamp = result[3]
+        now = datetime.datetime.now(datetime.timezone.utc)
+        now_minus_1d = now - datetime.timedelta(days=1)
+        now_minus_1h = now - datetime.timedelta(hours=1)
+        now_minus_1m = now - datetime.timedelta(minutes=1)
 
-            now = datetime.datetime.now(datetime.timezone.utc)
-            now_minus_1d = now - datetime.timedelta(days=1)
-            now_minus_1h = now - datetime.timedelta(hours=1)
-            now_minus_1m = now - datetime.timedelta(minutes=1)
+        data = [] if style == 'flat' else OrderedDict()
+        for result in results:
+            exchange, symbol, timeframe, latest_timestamp, average_duration, \
+            estimated_remaining_time, remaining_fetches = result
 
             status = None
             if timeframe == "1d":
-                status = timestamp > now_minus_1d
+                status = latest_timestamp > now_minus_1d
             elif timeframe == "1h":
-                status = timestamp > now_minus_1h
+                status = latest_timestamp > now_minus_1h
             elif timeframe == "1m":
-                status = timestamp > now_minus_1m
+                status = latest_timestamp > now_minus_1m
 
-            if exchange not in data:
-                data[exchange] = {}
-            if symbol not in data[exchange]:
-                data[exchange][symbol] = {}
-            data[exchange][symbol][timeframe] = {
-                "timestamp": timestamp,
-                "latest": status,
-            }
+            if style == 'flat':
+                data.append({
+                    'exchange': exchange,
+                    'symbol': symbol,
+                    'timeframe': timeframe,
+                    'timestamp': latest_timestamp,
+                    'isLatest': status,
+                    'averageDuration': average_duration,
+                    'remainingFetches': remaining_fetches,
+                    'estimatedRemainingTime': estimated_remaining_time,
+                })
+            elif style == 'nested':
+                if exchange not in data:
+                    data[exchange] = {}
+                if symbol not in data[exchange]:
+                    data[exchange][symbol] = {}
+                data[exchange][symbol][timeframe] = {
+                    "timestamp": latest_timestamp,
+                    "isLatest": status,
+                    'averageDuration': average_duration,
+                    'remainingFetches': remaining_fetches,
+                    'estimatedRemainingTime': estimated_remaining_time,
+                }
 
         self.write_json(data)
 
-    # TODO: implemented?
     async def post(self):
+        # TODO: should be removed since this happens on insertion
         """Updates the status of the latest OHLCV fetch."""
         exchange_tables = self.application.pg.fetch_many(SELECT_CCXT_OHLCV_EXCHANGE_TABLES)
         exchanges = [record[0] for record in exchange_tables]
@@ -68,7 +81,7 @@ class MethenaOHLCVStatusHandler(BaseHandler):
             for entry in latest_ohlcv_entries:
                 data.append((exchange, entry[0], entry[1], entry[2]))
 
-        self.application.pg.insert_many(UPSERT_CCXT_OHLCV_STATUS_QUERY, data)
+        self.application.pg.insert_many(UPSERT_CCXT_OHLCV_STATUS, data)
         self.set_status(204)
 
 
