@@ -93,16 +93,25 @@ class MethenaOHLCVFetcherStateHandler(BaseHandler):
         self.write_json(data)
 
     async def post(self):
+        raw_descriptor = self._get_descriptor()
+        # Note: This is the same behavior as is implemented in mqtt_client
+        task = asyncio.ensure_future(self.application.ccxt.init_exchange_markets(raw_descriptor[0]))
+        task.add_done_callback(functools.partial(self._callback_add_descriptor, raw_descriptor))
+        self.set_status(204)
+
+    async def delete(self):
+        raw_descriptor = self._get_descriptor()
+        # Note: This is the same behavior as is implemented in mqtt_client
+        descriptor = self.application.ccxt.build_descriptor(raw_descriptor)
+        self.application.state.remove_descriptor(descriptor)
+        self.set_status(204)
+
+    def _get_descriptor(self):
         exchanges = self.json_args.get('exchanges', '').split(',')
         symbols = self.json_args.get('symbols', '').split(',')
         timeframes = self.json_args.get('timeframes', '').split(',')
-        descriptor = (exchanges, symbols, timeframes)
+        return exchanges, symbols, timeframes
 
-        # Note: This is the same behavior as is implemented in mqtt_client
-        task = asyncio.ensure_future(self.application.ccxt.init_exchange_markets(exchanges))
-        task.add_done_callback(functools.partial(self._add_descriptor, descriptor))
-        self.set_status(204)
-
-    def _add_descriptor(self, raw_descriptor, result):
+    def _callback_add_descriptor(self, raw_descriptor, result):
         descriptor = self.application.ccxt.build_descriptor(raw_descriptor)
         self.application.state.add_descriptor(descriptor)
