@@ -134,7 +134,7 @@ class StateService(Singleton):
 
     # ================= [ Persist State ] =================
     def _persist_state(self):
-        self.postgres_client.insert(UPSERT_CCXT_OHLCV_FETCHER_STATE, json.dumps(self.state['config']))
+        self.postgres_client.insert(UPSERT_CCXT_OHLCV_FETCHER_STATE, (json.dumps(self.state['config']),))
         log.info('Persisted config to postgres')
 
     # ================= [ Exchange Open/Close State ] =================
