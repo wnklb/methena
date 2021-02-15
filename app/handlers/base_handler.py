@@ -15,16 +15,15 @@ class BaseHandler(RequestHandler):
         pass
 
     def prepare(self):
+        self.json_args = None
         if self.request.headers.get("Content-Type", "").startswith("application/json"):
             body = self.request.body
             if body:
                 self.json_args = json.loads(body)
-            else:
-                reason = "Bad Request. JSON requests require a body. Please provide one."
-                log_message = "400: Bad Request - Content-Type 'application/json' requires a body."
-                raise HTTPBadRequestError(reason=reason, log_message=log_message)
-        else:
-            self.json_args = None
+            # else:
+            #     reason = "Bad Request. JSON requests require a body. Please provide one."
+            #     log_message = "400: Bad Request - Content-Type 'application/json' requires a body."
+            #     raise HTTPBadRequestError(reason=reason, log_message=log_message)
 
     def set_default_headers(self):
         self.set_header("Access-Control-Allow-Origin", CORS_ORIGIN)
