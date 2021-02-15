@@ -7,7 +7,7 @@ from config import APP_PORT, AUTORELOAD, COMPRESS_RESPONSE, DEBUG, SERVE_TRACEBA
 from handlers import (CCXTExchangeBasesHandler, CCXTExchangeHandler, CCXTExchangeQuotesHandler,
                       CCXTExchangesHandler, CCXTExchangeSymbolsHandler, MethenaExchangesHandler,
                       MethenaOHLCVStatusHandler, MethenaOHLCVFetcherStateHandler)
-from services import CCXTService, PostgresClient
+from services import CCXTService, PostgresClient, StateService
 from tornado.options import define, options
 from tornado.routing import HostMatches
 
@@ -36,6 +36,7 @@ handlers = [
 class Application(tornado.web.Application):
     ccxt = CCXTService()
     pg = PostgresClient()
+    state = StateService()
 
     def __init__(self):
         settings = dict(

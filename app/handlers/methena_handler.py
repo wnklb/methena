@@ -1,4 +1,6 @@
+import asyncio
 import datetime
+import functools
 from collections import OrderedDict
 
 from handlers import BaseHandler
@@ -89,3 +91,18 @@ class MethenaOHLCVFetcherStateHandler(BaseHandler):
     async def get(self):
         data = self.application.pg.fetch_one(SELECT_OHLCV_FETCHER_STATE)
         self.write_json(data)
+
+    async def post(self):
+        exchanges = self.json_args.get('exchanges', '').split(',')
+        symbols = self.json_args.get('symbols', '').split(',')
+        timeframes = self.json_args.get('timeframes', '').split(',')
+        descriptor = (exchanges, symbols, timeframes)
+
+        # Note: This is the same behavior as is implemented in mqtt_client
+        task = asyncio.ensure_future(self.application.ccxt.init_exchange_markets(exchanges))
+        task.add_done_callback(functools.partial(self._add_descriptor, descriptor))
+        self.set_status(204)
+
+    def _add_descriptor(self, raw_descriptor, result):
+        descriptor = self.application.ccxt.build_descriptor(raw_descriptor)
+        self.application.state.add_descriptor(descriptor)
