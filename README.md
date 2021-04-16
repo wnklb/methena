@@ -52,7 +52,7 @@ Setup your database, schema and user:
 sudo su - postgres
 psql
 
-create database methena
+create database methena;
 \c methena
 
 create user methena with password '1234';
